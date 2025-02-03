@@ -94,33 +94,33 @@ DeviceNetworkEvents
 - **Action:** File download detected.
 - **File Path:** C:\Users\windows-user\Downloads\tor-browser-windows-x86_64-portable-14.0.4.exe
 ### 2. Process Execution - TOR Browser Installation
--**Timestamp:** 2025-02-02T23:24:46Z
--**Event:** The user "windows-user" executed the file tor-browser-windows-x86_64-portable-14.0.4.exe in silent mode, initiating a background installation of the TOR Browser.
--**Action:** Process creation detected.
--**Command:** tor-browser-windows-x86_64-portable-14.0.4.exe /S
--**File Path:** C:\Users\windows-user\Downloads\tor-browser-windows-x86_64-portable-14.0.4.exe
+- **Timestamp:** 2025-02-02T23:24:46Z
+- **Event:** The user "windows-user" executed the file tor-browser-windows-x86_64-portable-14.0.4.exe in silent mode, initiating a background installation of the TOR Browser.
+- **Action:** Process creation detected.
+- **Command:** tor-browser-windows-x86_64-portable-14.0.4.exe /S
+- **File Path:** C:\Users\windows-user\Downloads\tor-browser-windows-x86_64-portable-14.0.4.exe
 ### 3. Process Execution - TOR Browser Launch
--**Timestamp:** 2025-02-02T23:25:46Z
--**Event:** User "windows-user" opened the TOR browser. Processes associated with TOR browser, such as firefox.exe and tor.exe, were created, indicating successful browser launch.
--**Action:** Process creation of TOR browser-related executables detected.
--**File Path:** C:\Users\windows-user\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe
+- **Timestamp:** 2025-02-02T23:25:46Z
+- **Event:** User "windows-user" opened the TOR browser. Processes associated with TOR browser, such as firefox.exe and tor.exe, were created, indicating successful browser launch.
+- **Action:** Process creation of TOR browser-related executables detected.
+- **File Path:** C:\Users\windows-user\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe
 ### 4. Network Connection - TOR Network
--**Timestamp:** 2025-02-02T23:26:00Z
--**Event:** A network connection to IP 176.198.159.33 on port 9001 was established by the user "windows-user," confirming TOR browser network activity.
--**Action:** Connection success.
--**Process:** tor.exe
--**File Path:** C:\Users\windows-user\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe
+- **Timestamp:** 2025-02-02T23:26:00Z
+- **Event:** A network connection to IP 176.198.159.33 on port 9001 was established by the user "windows-user," confirming TOR browser network activity.
+- **Action:** Connection success.
+- **Process:** tor.exe
+- **File Path:** C:\Users\windows-user\Desktop\Tor Browser\Browser\TorBrowser\Tor\tor.exe
 ### 5. Additional Network Connections - TOR Browser Activity
--**Timestamps:**
-  -2025-02-02T23:26:08Z - Connected to 194.164.169.85 on port 443.
-  -2025-02-02T23:26:16Z - Local connection to 127.0.0.1 on port 9150.
--**Event**: Additional TOR network connections were established, indicating ongoing TOR browser activity by the user "windows-user."
--**Action:** Multiple successful connections detected.
+- **Timestamps:**
+  - 2025-02-02T23:26:08Z - Connected to 194.164.169.85 on port 443.
+  - 2025-02-02T23:26:16Z - Local connection to 127.0.0.1 on port 9150.
+- **Event**: Additional TOR network connections were established, indicating ongoing TOR browser activity by the user "windows-user."
+- **Action:** Multiple successful connections detected.
 ### 6. File Creation - TOR Shopping List
--**Timestamp:** 2025-02-02T23:36:35Z
--**Event:** The user "windows-user" created a file named tor-shopping-list.txt on the desktop, potentially documenting their TOR browser activities.
--**Action:** File creation detected.
--**File Path:** C:\Users\windows-user\Desktop\tor-shopping-list.txt
+- **Timestamp:** 2025-02-02T23:36:35Z
+- **Event:** The user "windows-user" created a file named tor-shopping-list.txt on the desktop, potentially documenting their TOR browser activities.
+- **Action:** File creation detected.
+- **File Path:** C:\Users\windows-user\Desktop\tor-shopping-list.txt
 
 
 ---
