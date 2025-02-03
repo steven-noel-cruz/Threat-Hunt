@@ -78,8 +78,11 @@ DeviceNetworkEvents
 
 ```kql
 // User shopping list was created and, changed, or deleted
+let target_machine = "hostname";
 DeviceFileEvents
 | where FileName contains "shopping-list.txt"
+| where DeviceName == target_machine
+| project TimeGenerated, DeviceName, ActionType, FileName, InitiatingProcessAccountName
 ```
 
 ---
