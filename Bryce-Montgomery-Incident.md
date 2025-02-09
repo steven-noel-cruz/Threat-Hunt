@@ -99,7 +99,7 @@ DeviceFileEvents
 
 5. **Identifying the Culprit**:
    - The final piece of evidence came from a **damning KQL record** that directly tied Bryce Montgomery to these actions.
-   - Timestamp **2025-02-05T08:57:32.2582822Z** revealed that Bryce, under their profile and device, initiated the data manipulation and zipping processes.
+   - Timestamp **2025-02-05T08:57:32.2582822Z** revealed that Bryce, under their profile and device, collected the data for exfiltration in their personal folder.
 
    **Query Used**:
 ```kql
