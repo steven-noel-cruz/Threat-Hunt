@@ -24,7 +24,8 @@ DeviceProcessEvents
 | where ProcessCommandLine has_any ("New-LocalUser")
 | project DeviceName, AccountName, ProcessCommandLine
 ```
-![image](https://github.com/user-attachments/assets/f01f7477-777f-4965-9f7f-1901b3cdf7ae)
+![image](https://github.com/user-attachments/assets/5317dd5d-450e-4ab0-9d31-87f4a7c78330)
+
 
 ### 2. Investigating Login Attempts
 
@@ -38,7 +39,8 @@ DeviceLogonEvents
 | project Timestamp, AccountName, ActionType, LogonType, DeviceName, RemoteIP
 | order by Timestamp asc
 ```
-![image](https://github.com/user-attachments/assets/b61c8e18-f370-41ed-9775-e49c2bd70286)
+![image](https://github.com/user-attachments/assets/6dd0c466-3b90-444c-90aa-60d03223c3af)
+
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
@@ -56,7 +58,8 @@ DeviceFileEvents
     FileName,
     InitiatingProcessCommandLine
 ```
-![image](https://github.com/user-attachments/assets/d4c0e461-9baa-47da-b463-376d001cc551)
+![image](https://github.com/user-attachments/assets/d58c6f50-5d26-4b31-9b65-1ebf7e177a57)
+
 
 ### Summary of Findings
 -Compromised Device: corpnet-1-ny
