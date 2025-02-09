@@ -46,8 +46,9 @@ DeviceFileEvents
 
 2. **Cross-Reference on Shared Workstations**:
    - Investigated shared workstations that Mr. Montgomery might have accessed under generic or guest profiles.
-   - The **DeviceFileEvents** table was queried to compare file interactions and identify other workstations used by Mr. Montgomery.
-   - DeviceName **"lobby-fl2-ae5fc"** was flagged for matching files found on Bryce's workstation, confirming his use of a guest workstation.
+   - The **DeviceFileEvents** table was queried to compare file interactions and identify other possible workstations used by Mr. Montgomery.
+   - DeviceName **"lobby-fl2-ae5fc"** was flagged for matching files found on Bryce's workstation, establishing his possible use of a guest workstation.
+   - Most importantly, the filenames of the data have been manipulated to mask their contents. A tactic common for data obscurity and exfiltration.
 
  **Query Used**:
 ```kql
