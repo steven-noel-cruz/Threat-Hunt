@@ -116,10 +116,13 @@ DeviceFileEvents
 ### **Summary of Findings**
 The investigation revealed that Bryce Montgomery, using both his own corporate workstation and a shared guest workstation, attempted to exfiltrate sensitive company data through the following steps:
 
-1. **Unauthorized Access**: Bryce accessed and manipulated sensitive files (related to corporate research) without authorization.
-2. **Steganography**: He used *steghide.exe* to embed corporate documents into seemingly innocuous personal images of himself and his family.
-3. **Data Packaging**: He compressed the stego images into a zip file using *7z.exe* and saved it to the F:\ drive of a guest workstation, presumably for transfer outside the network.
-4. **Cross-Workstation Activity**: Evidence showed that Bryce likely used shared workstations to hide his tracks, taking advantage of generic user profiles to mask his identity.
+1. **Thumbprint of one of the first corporate files that was accessed or interacted with by Bryce Montgomery during the investigation.:** b3302e58be7eb604fda65d1d04a5e18325c66792
+2. **DeviceName of any other workstation Mister Montgomery may have used:** lobby-fl2-ae5fc
+3. **FileName of the process that interacted with the files Q1-2025-ResearchAndDevelopment.pdf,Q2-2025-HumanTrials.pdf,Q3-2025-AnimalTrials-SiberianTigers.pdf:** steghide.exe
+4. **The full path of one of the files that was created as a result of steghide.exe running:** C:\ProgramData\bryce-and-kid.bmp (suzie-and-bob.bmp)(bryce-fishing.bmp)
+5. **The SHA256 thumbprint of the OTHER process that interacted with any of the stego images:** 707f415d7d581edd9bce99a0429ad4629d3be0316c329e8b9ebd576f7ab50b71
+6. **The complete FolderPath where the zip file ultimately ended up on the lobby computer:** F:\marketing_misc.zip
+7. **Damning piece of evidence that Bryce is the one attempting to steal corporate information and Timestamp (UTC) of the damning event:** F:\Bryce Personal\marketing_misc.zip & 2025-02-05T08:57:32.2582822Z
   
 ---
 
