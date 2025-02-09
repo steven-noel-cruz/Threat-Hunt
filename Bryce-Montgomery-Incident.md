@@ -32,6 +32,7 @@ Executives like Bryce have **full administrative privileges** on their machines,
 1. **Initial Investigation on Bryce Montgomery's Workstation**:
    - A KQL query was executed on the workstation `corp-ny-it-0334` to identify files interacted with by Bryce.
    - Tracked **FileName** and **FilePath** for any critical corporate documents (such as “Q1-2025-ResearchAndDevelopment.pdf”) and identified the file *thumbprint* (hash) `b3302e58be7eb604fda65d1d04a5e18325c66792`.
+
 **Query Used**:
 ```kql
 DeviceFileEvents
@@ -47,6 +48,7 @@ DeviceFileEvents
    - Investigated shared workstations that Mr. Montgomery might have accessed under generic or guest profiles.
    - The **DeviceFileEvents** table was queried to compare file interactions and identify other workstations used by Mr. Montgomery.
    - DeviceName **"lobby-fl2-ae5fc"** was flagged for matching files found on Bryce's workstation, confirming his use of a guest workstation.
+
  **Query Used**:
 ```kql
 DeviceFileEvents
@@ -59,7 +61,8 @@ DeviceFileEvents
 3. **Identifying Steganography Use**:
    - After querying **DeviceProcessEvents** for process interactions involving corporate files, it was discovered that **Steghide.exe** was used to embed corporate documents into personal image files on the shared workstation.
    - Images involved: `suzie-and-bob.bmp`, `bryce-and-kid.bmp`, and `bryce-fishing.bmp`.
-   - The **ProcessCommandLine** and **ProcessName** indicated the use of *steghide.exe*.
+   - The **ProcessCommandLine** indicated the use of *steghide.exe* with an output folder path to C:\ProgramData\.
+
  **Query Used**:
 ```kql
 DeviceProcessEvents
@@ -71,13 +74,43 @@ DeviceProcessEvents
 ![image](https://github.com/user-attachments/assets/85b67407-0150-4fb7-a012-562d4a7e5f2b)
 
 4. **Investigating Compression and Transfer**:
-   - Further KQL queries showed the **7z.exe** process interacting with these same stego images, confirming they were being compressed into a zip file (`marketing_misc.zip`).
+   - Further KQL queries showed the **7z.exe** process interacting with these same stego images based on the proccess thumbprint, confirming they were being compressed into a zip file (`marketing_misc.zip`).
    - The zip file ended up on the **F:\** drive of the lobby workstation, further pointing to suspicious data packaging for exfiltration.
+ 
+ **Query Used**:
+```kql
+DeviceFileEvents
+| where DeviceName == "lobby-fl2-ae5fc"
+| where InitiatingProcessCommandLine contains "suzie-and-bob.bmp" or InitiatingProcessCommandLine contains "bryce-fishing.bmp" or InitiatingProcessCommandLine contains "bryce-and-kid.bmp"
+| order by TimeGenerated desc 
+| project TimeGenerated ,DeviceName, FileName, InitiatingProcessCommandLine, FolderPath, SHA256
+```
+![image](https://github.com/user-attachments/assets/78c42ebe-e1c8-48cb-b5ff-80490afbc69d)
+
+ **Query Used**:
+```kql
+DeviceFileEvents
+| where SHA256 contains "07236346de27a608698b9e1ffef07b1987aa7fe8473aac171e66048ff322e2d6"
+| order by TimeGenerated desc 
+| project TimeGenerated ,DeviceName, FileName, PreviousFileName, InitiatingProcessCommandLine, FolderPath, SHA256
+```
+![image](https://github.com/user-attachments/assets/08e6a693-60c1-4d63-9f35-bd65dfc8ca88)
+
 
 5. **Identifying the Culprit**:
    - The final piece of evidence came from a **damning KQL record** that directly tied Bryce Montgomery to these actions.
    - Timestamp **2025-02-05T08:57:32.2582822Z** revealed that Bryce, under a generic profile, initiated the data manipulation and zipping processes.
-  
+
+   **Query Used**:
+```kql
+DeviceFileEvents
+| where SHA256 contains "07236346de27a608698b9e1ffef07b1987aa7fe8473aac171e66048ff322e2d6"
+| order by TimeGenerated desc 
+| project TimeGenerated ,DeviceName, InitiatingProcessAccountName, FileName, PreviousFileName, InitiatingProcessCommandLine, FolderPath, SHA256
+```
+
+![image](https://github.com/user-attachments/assets/1ad95d2e-34a0-4cd3-ae9d-edd0c726b0e5)
+
 ---
 
 ### **Summary of Findings**
