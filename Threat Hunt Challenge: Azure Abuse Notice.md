@@ -27,6 +27,8 @@ AzureNetworkAnalytics_CL
 | where PublicIPAddresses_s == "20.81.228.191"
 | project TimeGenerated, Name_s,MACAddress_s, PrivateIPAddresses_s, PublicIPAddresses_s, Subnetwork_s
 ```
+![image](https://github.com/user-attachments/assets/9564a07f-8f8b-4eee-97da-339979188f94)
+
 
 The second query shows that the Public IP address reported, has indeed shown patterns of brute-force attacks on the device "xxlinuxprofixxx" with 100 failed login attempts over 2 minutes using the root account. With this, we can validate the allegation.
 
@@ -44,6 +46,8 @@ DeviceLogonEvents
 | extend ReportId = strcat("LogonFailureAlert_", DeviceName, "_", format_datetime(Timestamp, 'yyyyMMdd_HHmmss')) // Dynamic ReportId
 | order by Timestamp desc
 ```
+![image](https://github.com/user-attachments/assets/8e4478ec-f656-410e-ae6a-2dfcebb9be7a)
+
 
 ### 2. Investigating Login Attempts
 
