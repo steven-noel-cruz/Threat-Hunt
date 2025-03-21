@@ -49,20 +49,19 @@ DeviceLogonEvents
 ![image](https://github.com/user-attachments/assets/8e4478ec-f656-410e-ae6a-2dfcebb9be7a)
 
 
-### 2. Investigating Login Attempts
+### 2. Trace the Origin of Malicious Activity: 
 
-Next, I examined the DeviceLogonEvents table to determine the method and timing of the compromise. The attacker attempted to log into the compromised machine (corpnet-1-ny) 14 times unsuccessfully before finally succeeding. This was followed shortly by the creation of the chadwick.s account. This series of failed and successful login attempts is consistent with a credential-stuffing attack.
+Next, I examined the DeviceInfo table to identify the compromised host, "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", which is a linux platform. 
 
 **Query Used**:
 ```kql
-DeviceLogonEvents
-| where Timestamp > ago(7d)
-| where DeviceName == "corpnet-1-ny"
-| project Timestamp, AccountName, ActionType, LogonType, DeviceName, RemoteIP
-| order by Timestamp asc
+DeviceInfo
+| where PublicIP == "20.81.228.191"
+| project Timestamp,DeviceName, PublicIP, OSPlatform
 ```
-![image](https://github.com/user-attachments/assets/6dd0c466-3b90-444c-90aa-60d03223c3af)
+![image](https://github.com/user-attachments/assets/9c3f2854-d717-47ca-a492-cce775273da1)
 
+Now that we have the host, we will use the device process table to find the entry point of any malicious behavior.
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
