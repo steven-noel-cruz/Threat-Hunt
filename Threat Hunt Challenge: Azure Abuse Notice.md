@@ -347,12 +347,15 @@ This is followed by the root user executing a command to use curl for connecting
 The malicious activity would cease until a CRON command at 0727 AM resumed the pattern for /bin/bash /var/tmp/.update-logs/./.b with various pauses of various lengths through the monring, and the observance of the /usr/sbin/sshd -D -R followed MOTD exploit was seen again at 0740 AM leading to another instance of a CRON command at 0755 AM with update-logs pattern followed by the ssshd to curl 196.251.114.67 followed by new additions to the pattern in the form of process commands such as /bin/bash /var/tmp/.update-logs/x followed by  cat data.json, grep OpenSSH, and awk -F " '/"ip":/ {ip=$4} /"userauth":/ && /password/ {print ip}' .temp. 
 
 This indicates that the script located at /var/tmp/.update-logs/x is attempting to read and possibly process a file named data.json. The contents of this file could be related to the attacker’s data collection, such as credentials or system data.
+
 ![image](https://github.com/user-attachments/assets/baf61e77-5739-4b7b-82fd-34bea2e45d0d)
 
 The grep command is filtering content to search for occurrences of "OpenSSH." This suggests the attacker might be looking for logs or information related to OpenSSH, which could include SSH authentication attempts, possibly indicating an interest in exploiting SSH-related vulnerabilities. 
+
 ![image](https://github.com/user-attachments/assets/7390fd32-c24c-426b-8311-18a5c6839db3)
 
 The awk command filters through a file named .temp to extract IP addresses related to password-based user authentication attempts. The pattern being matched, "userauth" and "password", suggests that this process is attempting to harvest IP addresses associated with SSH login attempts using password-based authentication, potentially identifying weak or compromised accounts.
+
 ![image](https://github.com/user-attachments/assets/1e9df02a-93b6-4f2d-b60b-37f134e88c30)
 
 These commands are characteristic of post-compromise activity, where the attacker is leveraging the system to extract valuable information, likely to exploit SSH vulnerabilities or credential weaknesses further. The suspicious behavior of processing data in hidden directories like /var/tmp/.update-logs/ and using tools like awk, grep, and cat to sift through data files and logs points to a malicious intent.
