@@ -320,9 +320,30 @@ The .bisis file is used to read from an iplist file and perform SSH connections 
 
 **.bisis File Execution:**
 
+![image](https://github.com/user-attachments/assets/f404cbe9-7706-4e02-9a30-f41d6a186d24)
 ![image](https://github.com/user-attachments/assets/cf088d40-e533-4f2f-8c7d-68e9fce76ad8)
 
 The .bisis executable is responsible for performing SSH connections with no user authentication, likely for brute-force attempts or network probing. The file reads IP addresses from the iplist file and attempts connections using the ssh command.
+
+
+After some time there have been a continuous string of processes implemented by CRON mirroring the /var/tmp/.update-logs/Update pattern leading to /var/tmp/.update-logs/.bisis activating on the system over and over with a minute to two minute pauses in addition of pgrep -x cache commands which produced a cache file over 1MB, The cache process executed here reinforces the likelihood of a persistent, scripted attack that leverages cron jobs and temporary directories for continued malicious operations. The malware has established mechanisms to remain active and hide its processes, potentially involving data mining or other unauthorized activities.
+
+The cache file, based on its size, frequency, and placement in /tmp, could be related to data storage, exfiltration, or other malicious caching techniques.
+
+Now up until 0617 AM, there haven't been any deviations from this pattern until a initiating process from the systemd led to a process command line of /bin/bash /usr/bin/ssshd. This stands out from the observed behavior as this log indicates that the root user is invoking a bash process associated with /usr/bin/ssshd. The suspicious file path (/usr/bin/ssshd) is likely a masquerading file. Attackers often name malicious binaries in ways that mimic legitimate services, such as sshd (the OpenSSH daemon), adding extra characters (e.g., ssshd) to evade detection.
+
+This is followed by the root user executing a command to use curl for connecting to an external IP address (196.251.114.67) and downloading a file from a suspicious path (/.x/black3). This behavior is typical of malware trying to download additional components or payloads from a remote server.
+
+![image](https://github.com/user-attachments/assets/70b5ffd6-0bd5-48eb-826d-0b0cdadf5c51)
+
+**Key Observations:**
+
+**Suspicious File (ssshd):** The process /usr/bin/ssshd is most likely masquerading as a legitimate service to avoid detection. The addition of extra characters to resemble sshd is a common tactic used by attackers to disguise malicious files.
+
+**External Connection (196.251.114.67):** The use of curl to contact an external server (196.251.114.67) and download a file from the .x/black3 path indicates that the system is trying to retrieve potentially malicious payloads. This IP address is most likely associated with an attacker-controlled server.
+
+**Automated Activity:** The repeated execution of bash commands, coupled with the ssshd service, suggests this is part of an automated infection or malware behavior, possibly trying to maintain persistence or fetch additional resources for exploitation.
+
 
 
 
