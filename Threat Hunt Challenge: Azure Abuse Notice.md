@@ -82,8 +82,29 @@ DeviceLogonEvents
 
 During the time of 0441 to 0445 on March 14th 2025, we see that the IP 8.219.145.111 has 92 failed attempts over SSHD as root, cursory reserach into the IP revelaed that it is a malicious IP via MalwareURL database. No sucessful logins were made by this IP. Next is the IP 10.0.0.217, this private IP belongs to the host and is suspsected to be a brute force test by the authorized user as seen by the account names under the attempts. The last IP 10.0.0.8 is the local scan engine in the range, although 91 attempts over 2 minutes is suspicious at a glance, this appears to be normal behavior for the local scan engine when investigating its acivity. This IP is the only one of the failed attempts to have successful logons, this is believed to be credentialed internal scanning through tenable.
 
-Our second look will be through daily Process Events in which we see unusual activity
+Our second look will be through daily Process Events in which we see unusual activity, the first of which is the command line for - bash useradd -m testuser followed by passwd -d testuser, this means that there is a account on the device that does not need credentials to access the device, it is believed that the authorized user had created this to trigger a flag in the tenable scanning.
 
+![image](https://github.com/user-attachments/assets/1ec489bf-5cc4-4625-82be-411b8faab76e)
+
+Further investigation sees a sucessful SSHD logon at 0546 AM March 14th, this is validated against the device logon activity from 20.169.181.216., a data center in VA. The details of the process is sshd: [accepted], followed by sh -c "/usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d > /run/motd.dynamic.new". What this means is that the message of the day is running which seems nornmal enough, however In the context of potential exploits, the /etc/update-motd.d/ directory can be used to run scripts as root, which can be a target for persistence mechanisms in attacks. A malicious script in this directory would be executed each time a user logs in, potentially running unauthorized commands or reconnaissance as seen with the motd.d/50-landscape-sysinfo, update-motd.d/91-release-upgrade,update-motd.d/90-updates-available  and who-q leading to a commmand to update motd fsack at reboot to determine the system's resilence. The recon chain continues with grep commands such as -q -m 1, and bash -c 'nvidia-smi -q | grep "Product Name"' to ascertain the GPU of the device leading to another logon from the same IP
+
+![image](https://github.com/user-attachments/assets/a69feeb5-8364-4db0-99cd-7cb9b89d2381)
+![image](https://github.com/user-attachments/assets/5afeff57-ec41-4bec-bb1c-2e206eed4f9f)
+![image](https://github.com/user-attachments/assets/b12c7771-29ad-406c-aa93-d3846867eb38)
+![image](https://github.com/user-attachments/assets/fc8419db-ef24-4e7f-ac8b-aa4fe356f04e)
+![image](https://github.com/user-attachments/assets/7e425515-c9d9-4f9f-94e0-f95cde577ef6)
+![image](https://github.com/user-attachments/assets/ecf7de80-6d79-45c0-9f1a-a173413a26fe)
+
+
+We would then observe that a suspect executable from the systemd that seems to be titled with obsfucation to avoid detection at nearly the same time as the Message of the day update header, I suspect that the header was manipulated to inject malicious code and trigger this exploit upon review of the SSHD Login process, the 00-header process, most of the MOTD processes, the sh -c "pkill -9 intelshell >/dev/null 2>&1", sh -c "pkill -STOP Chrome >/dev/null 2>&1", and sh -c "pkill -STOP cnrig >/dev/null 2>&1"  SHA256 Hash to be one and the same 4f291296e89b784cd35479fca606f228126e3641f5bcaee68dee36583d7c9483. 
+![image](https://github.com/user-attachments/assets/6e8768bb-b07c-4ddf-82af-8ca182a4de47)
+![image](https://github.com/user-attachments/assets/9d3d6374-1a4f-4e6b-9d8e-fd83598ee2e4)
+![image](https://github.com/user-attachments/assets/285f3d22-997f-45ec-a462-e522395df270)
+![image](https://github.com/user-attachments/assets/a356001c-b744-46dc-a1b4-3d97226a81b3)
+![image](https://github.com/user-attachments/assets/bf1b052f-a5c5-44b8-9e0f-7a460e249774)
+![image](https://github.com/user-attachments/assets/0c5fb201-b2d9-4506-9c1d-b0d42d8fd8da)
+
+Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. But more importantly, the user had logged back in
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
