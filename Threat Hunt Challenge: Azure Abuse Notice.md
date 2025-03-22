@@ -340,11 +340,11 @@ This is followed by the root user executing a command to use curl for connecting
 
 **Suspicious File (ssshd):** The process /usr/bin/ssshd is most likely masquerading as a legitimate service to avoid detection. The addition of extra characters to resemble sshd is a common tactic used by attackers to disguise malicious files.
 
-**External Connection (196.251.114.67):** The use of curl to contact an external server (196.251.114.67) and download a file from the .x/black3 path indicates that the system is trying to retrieve potentially malicious payloads. This IP address is most likely associated with an attacker-controlled server.
+**External Connection (196.251.114.67):** The use of curl to contact an external server located in Amsterdam (196.251.114.67) and download a file from the .x/black3 path indicates that the system is trying to retrieve potentially malicious payloads. This IP address is most likely associated with an attacker-controlled server.
 
 **Automated Activity:** The repeated execution of bash commands, coupled with the ssshd service, suggests this is part of an automated infection or malware behavior, possibly trying to maintain persistence or fetch additional resources for exploitation.
 
-
+The malicious activity would cease until a CRON command at 0727 AM resumed the pattern for /bin/bash /var/tmp/.update-logs/./.b with various pauses of various lengths through the monring, and the observance of the /usr/sbin/sshd -D -R followed MOTD exploit was seen again at 0740 AM 
 
 
 ### 3. Analyzing File Events
