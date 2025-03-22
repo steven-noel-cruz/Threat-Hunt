@@ -108,32 +108,32 @@ We would then observe that a suspect executable from the systemd that seems to b
 
 Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. The exploit would then deploy a malicious script for cryptomining with persistence mechanisms, system compromise techniques, and a focus on data exfiltration:
 
--Malicious Elements:
+####Malicious Elements:
 --Remote Payload Download & Execution:
 
 --The script uses wget and curl to download and execute payloads from suspicious domains (e.g., dinpasiune.com and 85.31.47.99), potentially delivering a cryptominer or other malware.
--System Cleanup & Concealment:
+####System Cleanup & Concealment:
 
 --Clears evidence by deleting logs (.bash_history, history -c) and critical files (e.g., /var/tmp/.update-logs).
 --Deletes or disables competing malware or services by killing processes (pkill xmrig, pkill java, etc.).
--Password List Generation:
+####Password List Generation:
 
 --Generates weak default passwords for users by extracting system usernames (cat /etc/passwd) and creating combinations of usernames and weak password strings like 123456, password, Passw0rd.
 -Persistence Mechanisms:
 
 --The script recreates critical files (/etc/sysctl.conf), updates file limits, and ensures system stability for continued operation of the malware.
 --It also re-establishes itself through crontab manipulation and uses /dev/shm/.x for storing malicious files, which is commonly used for persistence.
--Crontab & SSH Key Manipulation:
+####Crontab & SSH Key Manipulation:
 
 --Crontab entries are removed, potentially removing legitimate or other scheduled tasks, while setting up new ones to run the miner regularly.
 --SSH keys are manipulated (chattr -iae ~/.ssh/authorized_keys) to avoid detection or disable administrative access.
 -Connection Attempts & Data Exfiltration:
 
 --The ./network component and references to .diicot indicate potential exfiltration of sensitive data or continued control through a network communication mechanism.
--Miner Function:
+####Miner Function:
 
 --Cleans up the environment by removing evidence and attempting to continue cryptomining operations using files like /tmp/kuak or /var/tmp/Documents/.diicot.
--SHA256:
+####SHA256:
 --The SHA256 hash provided (59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4) refers to the binary or script identified in this incident, useful for file identification in threat databases.
 
 ### 3. Analyzing File Events
