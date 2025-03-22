@@ -217,9 +217,9 @@ function Miner {
 Miner
 ```
 
-**Malicious Elements:**
---Remote Payload Download & Execution:
+***Malicious Elements:***
 
+**Remote Payload Download & Execution:**
 --The script uses wget and curl to download and execute payloads from suspicious domains (e.g., dinpasiune.com and 85.31.47.99), potentially delivering a cryptominer or other malware.
 
 **System Cleanup & Concealment:**
