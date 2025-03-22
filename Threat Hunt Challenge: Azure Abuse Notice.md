@@ -397,7 +397,7 @@ This process is trying to exfiltrate data to an external IP 196.251.73.38 using 
 
 These logs show that the process repeats itself multiple times, indicating that data exfiltration is continuous. This behavior strongly points to an active and persistent compromise, where the attacker is collecting and sending sensitive information out of the system in small batches to avoid detection. There were 196 occurrences with a total file size of 162,371,104 bytes (around 162 MB).
 
-This behavior would now be observed in addition to the usual malware behavior throughout the rest of the device's activities
+This behavior would now be observed in addition to the usual malware behavior throughout the rest of the device's activities all the way to 0645 PM to it's last process.
 
 
 
