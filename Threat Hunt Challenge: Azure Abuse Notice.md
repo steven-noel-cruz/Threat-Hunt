@@ -348,8 +348,10 @@ The malicious activity would cease until a CRON command at 0727 AM resumed the p
 
 This indicates that the script located at /var/tmp/.update-logs/x is attempting to read and possibly process a file named data.json. The contents of this file could be related to the attacker’s data collection, such as credentials or system data.
 ![image](https://github.com/user-attachments/assets/baf61e77-5739-4b7b-82fd-34bea2e45d0d)
+
 The grep command is filtering content to search for occurrences of "OpenSSH." This suggests the attacker might be looking for logs or information related to OpenSSH, which could include SSH authentication attempts, possibly indicating an interest in exploiting SSH-related vulnerabilities. 
-![image](https://github.com/user-attachments/assets/baf61e77-5739-4b7b-82fd-34bea2e45d0d)
+![image](https://github.com/user-attachments/assets/7390fd32-c24c-426b-8311-18a5c6839db3)
+
 The awk command filters through a file named .temp to extract IP addresses related to password-based user authentication attempts. The pattern being matched, "userauth" and "password", suggests that this process is attempting to harvest IP addresses associated with SSH login attempts using password-based authentication, potentially identifying weak or compromised accounts.
 ![image](https://github.com/user-attachments/assets/1e9df02a-93b6-4f2d-b60b-37f134e88c30)
 
