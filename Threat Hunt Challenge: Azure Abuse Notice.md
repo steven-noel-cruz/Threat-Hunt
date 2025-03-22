@@ -108,7 +108,8 @@ We would then observe that a suspect executable from the systemd that seems to b
 
 Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. The exploit would then deploy a malicious script for cryptomining with persistence mechanisms, system compromise techniques, and a focus on data exfiltration:
 
-```#!/bin/bash
+```
+#!/bin/bash
 key=$1
 user=$2
 if [[ $key == "KOFVwMxV7k7XjP7fwXPY6Cmp16vf8EnL54650LjYb6WYBtuSs3Zd1Ncr3SrpvnAU" ]]
