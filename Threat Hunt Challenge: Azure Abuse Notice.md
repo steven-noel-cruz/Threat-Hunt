@@ -1,4 +1,4 @@
-# Threat Hunt Report: Operation Jackal Spear
+# Threat Hunt Challenge: Azure Abuse Notice
 
 ## Platforms and Languages Leveraged
 - **Windows 10 Virtual Machines** (Microsoft Azure)
