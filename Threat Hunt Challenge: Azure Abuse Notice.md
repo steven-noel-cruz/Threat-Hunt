@@ -61,7 +61,29 @@ DeviceInfo
 ```
 ![image](https://github.com/user-attachments/assets/9c3f2854-d717-47ca-a492-cce775273da1)
 
-Now that we have the host, we will use the device process table to find the entry point of any malicious behavior.
+Now that we have the host, we will comb through Logon Events, File Events, and Process Events to determine malicious activity began and how the system was compromised. 
+
+Our first look at the logon events shows that the device has several IPs that stand out: 
+**Query Used**:
+```kql
+let failure_threshold = 10;
+let time_window = 90d;
+let trigger_window = 60s;
+DeviceLogonEvents
+| where DeviceName == "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"
+| where ActionType == "LogonFailed"
+| where Timestamp > ago(time_window)
+| summarize FailedLogonCount = count()by bin(Timestamp, trigger_window), DeviceName,DeviceId, RemoteIP, AccountName
+| where FailedLogonCount >= failure_threshold
+| extend ReportId = strcat("LogonFailureAlert_", DeviceName, "_", format_datetime(Timestamp, 'yyyyMMdd_HHmmss')) // Dynamic ReportId
+| order by Timestamp desc
+```
+![image](https://github.com/user-attachments/assets/bb99b14d-0e93-4c2c-aec5-ab7c9add181b)
+
+During the time of 0441 to 0445 on March 14th 2025, we see that the IP 8.219.145.111 has 92 failed attempts over SSHD as root, cursory reserach into the IP revelaed that it is a malicious IP via MalwareURL database. No sucessful logins were made by this IP. Next is the IP 10.0.0.217, this private IP belongs to the host and is suspsected to be a brute force test by the authorized user as seen by the account names under the attempts. The last IP 10.0.0.8 is the local scan engine in the range, although 91 attempts over 2 minutes is suspicious at a glance, this appears to be normal behavior for the local scan engine when investigating its acivity. This IP is the only one of the failed attempts to have successful logons, this is believed to be credentialed internal scanning through tenable.
+
+Our second look will be through daily Process Events in which we see unusual activity
+
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
