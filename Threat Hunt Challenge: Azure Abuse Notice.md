@@ -86,16 +86,19 @@ Our second look will be through daily Process Events in which we see unusual act
 
 ![image](https://github.com/user-attachments/assets/1ec489bf-5cc4-4625-82be-411b8faab76e)
 
-Further investigation sees a sucessful SSHD logon at 0546 AM March 14th, this is validated against the device logon activity from 20.169.181.216., a data center in VA. The details of the process is sshd: [accepted], followed by sh -c "/usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d > /run/motd.dynamic.new". What this means is that the message of the day is running which seems nornmal enough, however In the context of potential exploits, the /etc/update-motd.d/ directory can be used to run scripts as root, which can be a target for persistence mechanisms in attacks. A malicious script in this directory would be executed each time a user logs in, potentially running unauthorized commands or reconnaissance as seen with the motd.d/50-landscape-sysinfo, update-motd.d/91-release-upgrade,update-motd.d/90-updates-available  and who-q leading to a commmand to update motd fsack at reboot to determine the system's resilence. The recon chain continues with grep commands such as -q -m 1, and bash -c 'nvidia-smi -q | grep "Product Name"' to ascertain the GPU of the device leading to another logon from the same IP
+Further investigation sees a sucessful SSHD logon at 0546 AM March 14th, this is validated against the device logon activity from 20.169.181.216., a data center in VA. The details of the process is sshd: [accepted], followed by sh -c "/usr/bin/env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin run-parts --lsbsysinit /etc/update-motd.d > /run/motd.dynamic.new". What this means is that the message of the day is running which seems nornmal enough, however In the context of potential exploits, the /etc/update-motd.d/ directory can be used to run scripts as root, which can be a target for persistence mechanisms in attacks. A malicious script in this directory would be executed each time a user logs in, potentially running unauthorized commands or reconnaissance as seen with the motd.d/50-landscape-sysinfo, update-motd.d/91-release-upgrade,update-motd.d/90-updates-available  and who-q leading to a commmand to update motd fsack at reboot to determine the system's resilence. The recon chain continues with grep commands such as -q -m 1, and bash -c 'nvidia-smi -q | grep "Product Name"' to ascertain the GPU of the device leading to another logon from the same IP with the same process of MOTD following.
 
 ![image](https://github.com/user-attachments/assets/a69feeb5-8364-4db0-99cd-7cb9b89d2381)
 ![image](https://github.com/user-attachments/assets/b12c7771-29ad-406c-aa93-d3846867eb38)
 ![image](https://github.com/user-attachments/assets/fc8419db-ef24-4e7f-ac8b-aa4fe356f04e)
 ![image](https://github.com/user-attachments/assets/7e425515-c9d9-4f9f-94e0-f95cde577ef6)
 ![image](https://github.com/user-attachments/assets/ecf7de80-6d79-45c0-9f1a-a173413a26fe)
+![image](https://github.com/user-attachments/assets/6ccbec14-7e37-44b7-b164-55f660110b82)
+![image](https://github.com/user-attachments/assets/20cf6b24-c562-42eb-9d99-9e80b4e1a31c)
 
 
 We would then observe that a suspect executable from the systemd that seems to be titled with obsfucation to avoid detection at nearly the same time as the Message of the day update header, I suspect that the header was manipulated to inject malicious code and trigger this exploit upon review of the SSHD Login process, the 00-header process, most of the MOTD processes, the sh -c "pkill -9 intelshell >/dev/null 2>&1", sh -c "pkill -STOP Chrome >/dev/null 2>&1", and sh -c "pkill -STOP cnrig >/dev/null 2>&1"  SHA256 Hash to be one and the same 4f291296e89b784cd35479fca606f228126e3641f5bcaee68dee36583d7c9483. 
+
 ![image](https://github.com/user-attachments/assets/6e8768bb-b07c-4ddf-82af-8ca182a4de47)
 ![image](https://github.com/user-attachments/assets/9d3d6374-1a4f-4e6b-9d8e-fd83598ee2e4)
 ![image](https://github.com/user-attachments/assets/285f3d22-997f-45ec-a462-e522395df270)
@@ -103,7 +106,35 @@ We would then observe that a suspect executable from the systemd that seems to b
 ![image](https://github.com/user-attachments/assets/bf1b052f-a5c5-44b8-9e0f-7a460e249774)
 ![image](https://github.com/user-attachments/assets/0c5fb201-b2d9-4506-9c1d-b0d42d8fd8da)
 
-Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. But more importantly, the user had logged back in
+Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. The exploit would then deploy a malicious script for cryptomining with persistence mechanisms, system compromise techniques, and a focus on data exfiltration:
+
+-Malicious Elements:
+--Remote Payload Download & Execution:
+
+--The script uses wget and curl to download and execute payloads from suspicious domains (e.g., dinpasiune.com and 85.31.47.99), potentially delivering a cryptominer or other malware.
+-System Cleanup & Concealment:
+
+--Clears evidence by deleting logs (.bash_history, history -c) and critical files (e.g., /var/tmp/.update-logs).
+--Deletes or disables competing malware or services by killing processes (pkill xmrig, pkill java, etc.).
+-Password List Generation:
+
+--Generates weak default passwords for users by extracting system usernames (cat /etc/passwd) and creating combinations of usernames and weak password strings like 123456, password, Passw0rd.
+-Persistence Mechanisms:
+
+--The script recreates critical files (/etc/sysctl.conf), updates file limits, and ensures system stability for continued operation of the malware.
+--It also re-establishes itself through crontab manipulation and uses /dev/shm/.x for storing malicious files, which is commonly used for persistence.
+-Crontab & SSH Key Manipulation:
+
+--Crontab entries are removed, potentially removing legitimate or other scheduled tasks, while setting up new ones to run the miner regularly.
+--SSH keys are manipulated (chattr -iae ~/.ssh/authorized_keys) to avoid detection or disable administrative access.
+-Connection Attempts & Data Exfiltration:
+
+--The ./network component and references to .diicot indicate potential exfiltration of sensitive data or continued control through a network communication mechanism.
+-Miner Function:
+
+--Cleans up the environment by removing evidence and attempting to continue cryptomining operations using files like /tmp/kuak or /var/tmp/Documents/.diicot.
+-SHA256:
+--The SHA256 hash provided (59474588a312b6b6e73e5a42a59bf71e62b55416b6c9d5e4a6e1c630c2a9ecd4) refers to the binary or script identified in this incident, useful for file identification in threat databases.
 
 ### 3. Analyzing File Events
 To understand the extent of the data compromise, I searched the DeviceFileEvents table for actions initiated by the attacker under the new user account chadwick.s. I discovered that the attacker accessed and likely stole a sensitive file named CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf alognside other files in a zip file named gene_editing_papers, a high-value target that could indicate a larger espionage operation targeting proprietary research.
