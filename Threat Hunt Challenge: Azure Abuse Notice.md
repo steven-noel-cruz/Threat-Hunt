@@ -602,12 +602,95 @@ With this I believe we can within a certain margin of error, conclude that this 
 The question on our minds now would be "What was the first machine to have this malware in the network?", with MDE Device Invetory and MDE Incidents, we see that the first machine to run a retea script is linuxprogramfixjay on January 9th at 0639 AM, following the same set of patterns observed on the linux program fix device with a slight change to the order of operations. Where retea is initially executed without an obsfucated file to initiate, now it seems to rely on executing retea after running a obsfucated script.
 
 ![image](https://github.com/user-attachments/assets/1a3efa81-3ac0-4893-85a0-53b684aa630b)
+![image](https://github.com/user-attachments/assets/11eaa508-7f68-4b6e-8f27-e960e670dd8d)
 
 
-### Summary of Findings
+## Summary of Findings
+
+### **Validated Brute-Force Allegation:**
+
+**Source Confirmation:** The reported public IP was confirmed to belong to our Azure environment.
+
+**Attack Pattern:** Analysis of logon events revealed over 100 failed SSH attempts from an external malicious IP (8.219.145.111) targeting the Linux host, with a clear brute-force attack pattern on the root account.
+
+**Compromised Linux Host** – sakel-lunix-2:
+
+**Unauthorized Account Creation:** Evidence of account creation (e.g., testuser without a proper password) suggests an attempt to facilitate lateral movement or testing.
+
+### **Suspicious Process Activity:**
+
+Unusual process commands were noted, including modifications to the Message-of-the-Day (MOTD) scripts—potentially to establish persistence or to execute malicious payloads at each login.
+
+Discovery of an obfuscated executable (./UpzBUBnv) with a known malicious SHA256 hash indicates a likely cryptomining payload and concurrent efforts to disable competing processes.
+
+### **Service and Cron Manipulation:**
+
+The installation of a custom systemctl service (myservice) and multiple cron jobs ensures the malware’s persistence across reboots.
+
+Commands show evidence of log tampering and efforts to hide malicious activities (e.g., deletion of logs, obfuscated file names, and manipulation of SSH keys).
+
+### Malware Capabilities and Lateral Movement:
+
+**Remote Payloads and Data Exfiltration:**
+
+Use of wget/curl commands to download further payloads from suspicious domains.
+
+Continuous exfiltration activity noted (approximately 162 MB of data over multiple sessions) aimed at bypassing detection.
+
+### Network Scanning and Reconnaissance:
+
+The malware exhibits lateral movement capabilities, as seen by its internal network scans and SSH brute-force attempts.
+
+Multiple Ubuntu servers in the network display similar infection patterns, suggesting a broader compromise.
+
+### Initial Infection Point:
+
+Historical data suggests the first execution of the related retea script occurred on the device “linuxprogramfixjay” as early as January 9th, pointing to a possible origin for the spread.
 
 
+## Actions To Take
 
+### Immediate Isolation & Containment:
 
-### Response Taken
+Isolate affected Linux servers from the network to prevent further lateral movement.
+
+Block malicious IP addresses (e.g., 8.219.145.111, 196.251.73.38, and others flagged in the report) at the perimeter firewall.
+
+### Eradication and System Remediation:
+
+Identify and remove all malicious files, unauthorized user accounts, and rogue services (e.g., ssshd, myservice) from the affected systems.
+
+Review and clean up cron jobs and scheduled tasks that may have been modified for persistence.
+
+Re-image or patch systems if removal is incomplete or integrity is in question.
+
+### Credential and Access Management:
+
+Rotate all credentials and SSH keys across the affected environment.
+
+Audit and reinforce multi-factor authentication (MFA) for all administrative accounts.
+
+### Enhanced Monitoring and Forensic Analysis:
+
+Deploy enhanced logging and continuous monitoring on endpoints to detect similar activities.
+
+Extend retention policies for advanced threat hunting with Microsoft Defender for Endpoint (MDE) to capture a longer timeline of activities.
+
+Perform a network-wide scan using KQL queries to identify additional hosts exhibiting similar malicious behaviors.
+
+### Incident Response and Communication:
+
+Engage the incident response team to conduct a full forensic analysis, particularly focusing on lateral movement patterns.
+
+Notify internal stakeholders and update the Azure Safeguards Team with the latest findings and remediation plans.
+
+Consider sharing anonymized threat intelligence with industry partners to warn of the observed tactics.
+
+### Review and Harden Security Posture:
+
+Audit system configurations, especially for SSH and scheduled tasks, to ensure compliance with security best practices.
+
+Implement segmentation controls to limit lateral movement between critical assets and non-critical devices.
+
+Review and update security policies to cover similar attack vectors in the future.
 
