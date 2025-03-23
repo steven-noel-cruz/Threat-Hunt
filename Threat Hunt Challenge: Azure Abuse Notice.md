@@ -17,7 +17,7 @@ there's truth to these allegations and, if so, uncover how deep the compromise g
 
 ## Steps Taken
 
-### 1. . Validate the Allegation:
+## 1. . Validate the Allegation:
 
 To start the investigation, I searched the **AzureNetworkAnalytics_CL** and **`DeviceLogonEvents`** table to verify ownership of the reported IP and confirm the brute force attack pattern from our environment. Our first query shows the name, MAC, Private and Public IP, aswell as the subnetwork which displays the cyber-range, our organization, confirming that the IP does infact belong to us.
 
@@ -49,7 +49,7 @@ DeviceLogonEvents
 ![image](https://github.com/user-attachments/assets/8e4478ec-f656-410e-ae6a-2dfcebb9be7a)
 
 
-### 2. Trace the Origin of Malicious Activity: 
+## 2. Trace the Origin of Malicious Activity: 
 
 
 ### Device Info
@@ -539,7 +539,7 @@ We have reached the end of this Device's investigation, and can surmise a patter
 
 This investigation feels halfway done if my theory of lateral movement prior to this device's compromise is true, to confirm this we will query the network for similiar events.
 
-### Investigation of Internal Network ###
+## Investigation of Internal Network
 
 The first thing that I want to check is the presence of the same retea script in the network, this query initially returned 6 devices but as of March 23rd, 2025, it returns 5 devices. This is due to the 30 day data retention for advanced hunting, at a later point in this investigation we will have to utilize MDE data. about 80% of the devices share similiar process counts for the script.
 
