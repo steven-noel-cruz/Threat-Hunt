@@ -553,21 +553,36 @@ DeviceProcessEvents
 ```
 ![image](https://github.com/user-attachments/assets/6c83f87b-1fb7-4664-8154-e21cf0dc0564)
 
-Now we need to see what these devices have in common. As we can see, all 5 devices are Linux Ubuntu Servers confirming my initial theory. This common factor can greatly assist us in tracking the malware in the future and back to its origin in our network. 
+However when we run a query directly targeting the network activity for .bisis activity, we find eight devices, granted two seem to be duplicates but for now we will assume they are different devices. As we can see, the numbers are the amount of target IPs that connection attempts to were made are 661,105. 
 
 **Query Used**:
 ```kql
-let CompromisedDevices = dynamic(["linux-programmatic-vm-danny.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-program-fix.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-programatic-ajs.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linuxvmdavid.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"]);
+DeviceNetworkEvents
+| where InitiatingProcessCommandLine contains ".bisis"
+| summarize IPTargetedCount = count() by bin(Timestamp, 1d), DeviceName
+| order by Timestamp desc
+```
+
+![image](https://github.com/user-attachments/assets/055b9b78-1356-4acc-85ff-fde3c76b7e70)
+
+
+
+Now we need to see what these devices have in common. As we can see, all 6 devices are Linux Ubuntu Servers confirming my initial theory. This common factor can greatly assist us in tracking the malware in the future and back to its origin in our network. 
+
+**Query Used**:
+```kql
+let CompromisedDevices = dynamic(["linux-programatic-ajs","linux-programatical-vul-remediation-lokesh.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net","sakel-lunix-2","linux-programmatic-vm-danny.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-program-fix.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linux-programatic-ajs.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "linuxvmdavid.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"]);
 DeviceInfo
 //| where PublicIP == "20.81.228.191"
 | where DeviceName in (CompromisedDevices)
 | distinct DeviceName, PublicIP, OSPlatform, OSDistribution, DeviceType
 ```
-![image](https://github.com/user-attachments/assets/4a56da81-b276-4340-9b55-022fc30913b9)
+![image](https://github.com/user-attachments/assets/843fbeaa-4e05-4712-a86b-98cd0ac1ef09)
 
-Investigation of the vm-danny was odd, the device was first seen on Mar 10, 2025 1:57:33 PM and last seen Mar 10, 2025 7:06:53 PM. Initial look into the process table appeared that the device was infected with the same malware before it was first seen as it displayed behavior mid malware execution and persistance. There was no insertion technique to be seen or even any VM configuration from azure on the logs. I'm led to believe that the device was either not logging before the time it was first seen or that attacker had completely botched clearing their tracks only to erase a significant portion of the devices logs.
 
-Investigation into linux program fix device yielded the same pattern of activity with the exception of a short attempt to brute force the device from an australian IP, 170.64.230.111, as account name backup and proxy until they gained access with root. It may be a coincidence that the logon event at 0551 AM happens to be when the /bin/sh /etc/update-motd.d/90-updates-available recon pattern appears. The log may have been cleaned to cover the point of entry, however it is safe to assume that this IP is associated with the activity based on what comes next. The next series of process events follows the pattern as expected with the exception of /usr/sbin/sshd -D -R to scp command pulling an executable from the tmp/cache leading to a bash command leading to the creation of the ./MNFleGNm and retea script
+Investigation of the vm-danny was odd, the device was first seen on Mar 10, 2025 1:57:33 PM and last seen Mar 10, 2025 7:06:53 PM. Initial look into the process table appeared that the device was infected with the same malware before it was first seen as it displayed behavior mid malware execution and persistance. There was no insertion technique to be seen or even any VM configuration from azure on the logs. I'm led to believe that the device was either not logging before the time it was first seen or that attacker had completely botched clearing their tracks only to erase a significant portion of the devices logs. However on the network event side, this device logged 107720 connection requests out with the /var/tmp/.update-logs/.bisis script and 9277 with the /var/tmp/.update-logs/Update script.
+
+Investigation into linux program fix device yielded the same pattern of activity with the exception of a short attempt to brute force the device from an australian IP, 170.64.230.111, as account name backup and proxy until they gained access with root. It may be a coincidence that the logon event at 0551 AM happens to be when the /bin/sh /etc/update-motd.d/90-updates-available recon pattern appears. The log may have been cleaned to cover the point of entry, however it is safe to assume that this IP is associated with the activity based on what comes next. The next series of process events follows the pattern as expected with the exception of /usr/sbin/sshd -D -R from the very same IP to the scp command pulling an executable from the tmp/cache leading to a bash command leading to the creation of the ./MNFleGNm and retea script. The device would then continue to follow the same pattern of activity as seen previously in all areas.
 
 ```
 bash
