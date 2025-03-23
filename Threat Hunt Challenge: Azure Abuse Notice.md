@@ -466,7 +466,7 @@ The events indicate that a malicious process on sakel-lunix-2 is creating files 
 
 the 17th of March 2025 would not see any new behavior from the malware.
 
-### Network Events ###
+### Network Events
 
 **Query Used**:
 ```kql
@@ -481,13 +481,14 @@ The previous query did lead us to find an event that had /dev/shm/.x/network sca
 ![image](https://github.com/user-attachments/assets/881a6b2e-8288-4e50-88dc-0184b3da5ce7)
 
 further investgiation found that numerous IPs were targeted: 
+
 March 17, 2025:
 
-March 17, 2025, 4:00 AM: 47,793 times
+4:00 AM: 47,793 times
 
-March 17, 2025, 3:00 AM: 37,360 times
+3:00 AM: 37,360 times
 
-In comparison with the earlier data from March 14, 2025:
+March 14, 2025:
 
 8:00 AM: 26,601 times
 
@@ -496,8 +497,6 @@ In comparison with the earlier data from March 14, 2025:
 6:00 AM: 30,063 times
 
 5:00 AM: 7,727 times
-
-This sharp rise, particularly between March 14 and March 17, suggests an escalation in connection attempts. It could indicate the process is part of a larger, more aggressive automated attack or persistent unauthorized access attempt. Investigating the process's origin, activity on the affected machine, and connection details would be crucial in determining the cause and mitigating the impact.
 
 **Query Used**:
 ```kql
@@ -509,6 +508,39 @@ DeviceNetworkEvents
 ```
 
 ![image](https://github.com/user-attachments/assets/9da72e08-c76e-4269-8fb4-aa7b60bb8703)
+
+In addition to this script, the /var/tmp/.update-logs/update path and proccess command are also making the same connection requests at lower counts than the previous script
+
+March 17, 2025:
+
+4:00 AM: 310 times
+
+March 14, 2025:
+
+8:00 AM: 868 times
+
+6:00 AM: 754 times
+
+**Query Used**:
+```kql
+DeviceNetworkEvents
+| where DeviceName == "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"
+| where InitiatingProcessCommandLine contains  "/var/tmp/.update-logs/update"
+| summarize IPTargetedCount = count() by bin(Timestamp, 1h)
+| order by Timestamp desc
+```
+![image](https://github.com/user-attachments/assets/6c8e6068-aebb-4845-9270-658d5df50996)
+
+After sorting out the numerous malicious events, we're left with 100 entries out of what is over 100,000 events from the scripts alone. In this we see the ./UpzBUBnv connection requests and the curl commands from earlier, however now we can see a connection request regarding the cache file that was created and seen repeating in the process table. The request is to 87.120.114.219, a data center in Bulgaria. This connection request would repeat 4 times.
+
+![image](https://github.com/user-attachments/assets/7604198d-138c-4b2b-ac5e-aff49b1c2773)
+
+We have reached the end of this Device's investigation, and can surmise a pattern or behavior for the malware that infected the machine. However the point of insertion is not clear with only speculation, my working theory is that another machine on the network of similiar build was infected and had pinged this device as part of the .x/network script and network events, thus opening the device to recon from the attacker. While there are some suspect connections, my leading theory is that one sshd connection followed by a run-parts process was the start of the attack chain. 
+
+This investigation feels halfway done if my theory of lateral movement prior to this device's compromise is true, to confirm this we will query the network for similiar events.
+
+### Investigation of Internal Network ###
+
 
 
 ### Summary of Findings
