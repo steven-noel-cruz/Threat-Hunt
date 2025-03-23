@@ -512,15 +512,9 @@ DeviceNetworkEvents
 
 
 ### Summary of Findings
--Compromised Device: corpnet-1-ny
 
--Attacker's Public IP Address: 102.37.140.95
 
--Number of Failed Login Attempts: 14
 
--Account Created by the Attacker: chadwick.s
-
--Stolen Files: a gene_editing_papers.zip "CRISPR-X__Next-Generation_Gene_Editing_for_Artificial_Evolution.pdf" "Genetic_Drift_in_Hyper-Evolving_Species__A_Case_Study.pdf" "Mutagenic_Pathways_and_Cellular_Adaptation.pdf" "Mutational_Therapy__Theoretical_Applications_in_Human_Enhancement.pdf" "Spontaneous_Mutations_in_Simulated Microbial Ecosystems"
 
 ### Response Taken
-Upon identifying the compromised device and account, I took steps to isolate corpnet-1-ny from the network to prevent further data exfiltration. The chadwick.s account was flagged for further investigation, and incident response teams were alerted to the presence of stolen research files. Additionally, the system logs were preserved for forensic analysis and evidence gathering.
+
