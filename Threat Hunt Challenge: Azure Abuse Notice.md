@@ -51,6 +51,9 @@ DeviceLogonEvents
 
 ### 2. Trace the Origin of Malicious Activity: 
 
+
+### Device Info
+
 Next, I examined the DeviceInfo table to identify the compromised host, "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net", which is a linux platform. 
 
 **Query Used**:
@@ -61,7 +64,9 @@ DeviceInfo
 ```
 ![image](https://github.com/user-attachments/assets/9c3f2854-d717-47ca-a492-cce775273da1)
 
-Now that we have the host, we will comb through Logon Events, File Events, and Process Events to determine malicious activity began and how the system was compromised. 
+Now that we have the host, we will comb through Logon Events, File Events, Process Events, and Network Events to determine malicious activity began and how the system was compromised. 
+
+### Device Logon Events
 
 Our first look at the logon events shows that the device has several IPs that stand out: 
 **Query Used**:
@@ -82,6 +87,17 @@ DeviceLogonEvents
 
 During the time of 0441 to 0445 on March 14th 2025, we see that the IP 8.219.145.111 has 92 failed attempts over SSHD as root, cursory reserach into the IP revelaed that it is a malicious IP via MalwareURL database. No sucessful logins were made by this IP. Next is the IP 10.0.0.217, this private IP belongs to the host and is suspsected to be a brute force test by the authorized user as seen by the account names under the attempts. The last IP 10.0.0.8 is the local scan engine in the range, although 91 attempts over 2 minutes is suspicious at a glance, this appears to be normal behavior for the local scan engine when investigating its acivity. This IP is the only one of the failed attempts to have successful logons, this is believed to be credentialed internal scanning through tenable.
 
+### Device Process Events
+
+**Query Used**:
+```kql
+DeviceProcessEvents
+| where DeviceName == "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"
+| project Timestamp, DeviceName, InitiatingProcessAccountName,AccountName, ProcessId,InitiatingProcessId, InitiatingProcessCommandLine, ProcessCommandLine, InitiatingProcessParentFileName,FileSize, FileName, InitiatingProcessFolderPath, FolderPath, SHA256, InitiatingProcessSHA256
+| order by Timestamp asc
+```
+
+
 Our second look will be through daily Process Events in which we see unusual activity, the first of which is the command line for - bash useradd -m testuser followed by passwd -d testuser, this means that there is a account on the device that does not need credentials to access the device, it is believed that the authorized user had created this to trigger a flag in the tenable scanning.
 
 ![image](https://github.com/user-attachments/assets/1ec489bf-5cc4-4625-82be-411b8faab76e)
@@ -97,14 +113,17 @@ Further investigation sees a sucessful SSHD logon at 0546 AM March 14th, this is
 ![image](https://github.com/user-attachments/assets/20cf6b24-c562-42eb-9d99-9e80b4e1a31c)
 
 
-We would then observe that a suspect executable from the systemd that seems to be titled with obsfucation to avoid detection at nearly the same time as the Message of the day update header, I suspect that the header was manipulated to inject malicious code and trigger this exploit upon review of the SSHD Login process, the 00-header process, most of the MOTD processes, the sh -c "pkill -9 intelshell >/dev/null 2>&1", sh -c "pkill -STOP Chrome >/dev/null 2>&1", and sh -c "pkill -STOP cnrig >/dev/null 2>&1"  SHA256 Hash to be one and the same 4f291296e89b784cd35479fca606f228126e3641f5bcaee68dee36583d7c9483. 
+At 0546 AMWe would then observe that a suspect executable from the systemd that seems to be titled with obsfucation, "./UpzBUBnv" SHA256 "81d9ef2342cb1d7329a6b53297678c925b0b5380b2add63a140db83fa046a83d" with a connection request to 196.251.73.38 also known as ns1432.ztomy.com that a few security vendors has flagged as malicious and miner, to avoid detection at nearly the same time as the Message of the day update header.
 
+![image](https://github.com/user-attachments/assets/f071afdf-af03-4c89-8a3c-4650f7741578)
 ![image](https://github.com/user-attachments/assets/6e8768bb-b07c-4ddf-82af-8ca182a4de47)
 ![image](https://github.com/user-attachments/assets/9d3d6374-1a4f-4e6b-9d8e-fd83598ee2e4)
 ![image](https://github.com/user-attachments/assets/285f3d22-997f-45ec-a462-e522395df270)
 ![image](https://github.com/user-attachments/assets/a356001c-b744-46dc-a1b4-3d97226a81b3)
 ![image](https://github.com/user-attachments/assets/bf1b052f-a5c5-44b8-9e0f-7a460e249774)
 ![image](https://github.com/user-attachments/assets/0c5fb201-b2d9-4506-9c1d-b0d42d8fd8da)
+
+
 
 Based on this initial process, it seems to be killing certain services and processes such as chrome and cnrig, this seems to be indicative of exploiting the device to cryptomining and stopping competitive mining if present. The exploit would then deploy a malicious script for cryptomining with persistence mechanisms, system compromise techniques, and a focus on data exfiltration:
 
@@ -399,7 +418,97 @@ These logs show that the process repeats itself multiple times, indicating that 
 
 This behavior would now be observed in addition to the usual malware behavior throughout the rest of the device's activities all the way to 0645 PM to it's last process.
 
+### Device File Events
 
+The creation of the UpzBUBnv file at 0546 AM shows the process command to be scp -qt /var/tmp/UpzBUBnv, The use of scp to copy a file into /var/tmp/, combined with root privileges and previous investigation, confirms a malicious operation, such as downloading a payload or malware to be executed later that we see with Retea process.
+
+![image](https://github.com/user-attachments/assets/5f422313-0324-44a7-a400-8210d95c6838)
+
+Here we see the x.sh file, which is part of the .x/network process and network event that made connection requests to 10.0.0.0 - 255, this is suspected to be both recon into the network, staging for lateral movement and persistence in the network.
+
+![image](https://github.com/user-attachments/assets/9ecdb6ef-1656-46b0-a860-dfb7833f8100)
+
+as mentioned previously, the Retea file, SHA256 94c7c6ca6042201ba200a267a5e0aa4b2d467445bda35a234c1c23dc14359eb7, was created as a result of the UpzBUBnv file. As we have seen before, the retea script is quite lenghty.
+
+![image](https://github.com/user-attachments/assets/f9fc90d9-4290-4f2e-b79d-2a55be55c3d9)
+
+Next we would see the file creation of kuak and diicot in the tmp directory, likely continuing to plant or download malicious files as initiated by the .x/network script.
+
+![image](https://github.com/user-attachments/assets/781927b9-f521-4a3f-b1c8-62e91e15bb79)
+
+Next we see a file deletion event for .send.json initiated by the ./UpzBUBnv script, the deletion of .send.json at this stage indicates that the attacker may have completed a specific task (e.g., exfiltrating data or completing a communication), and is now removing the evidence. Given the frequent use of the /tmp and /var/tmp directories, the attacker is utilizing temporary storage spaces to avoid detection.
+
+![image](https://github.com/user-attachments/assets/f4a81a34-745b-443e-ab78-ac5d0df934c3)
+
+The creation of ssshd in /usr/bin/ indicates that the attacker is attempting to persist on the system by mimicking legitimate system processes. This could allow them to maintain access, potentially through a malicious SSH service or another form of backdoor. The small file size suggests it's likely a script or a small utility meant to be part of a larger compromise.
+
+![image](https://github.com/user-attachments/assets/a8f25e8a-2b9c-4a3b-9460-b4ea768359a4)
+
+
+The creation of this Update file is likely part of the malicious activities associated with the UpzBUBnv process. Given its size and location, this file could be a key component of the payload, potentially containing additional malicious software, scripts, or even updates to the attacker's malware.
+
+![image](https://github.com/user-attachments/assets/7e51ec9c-8f24-40fb-99fa-05db03fe3eee)
+
+The file gogu appears to be either a copy or a variant of the previously seen UpzBUBnv file based on the identical hash. Since it is created in the /dev/shm/ directory, it is intended for temporary use, potentially to avoid detection by being stored in memory.
+
+![image](https://github.com/user-attachments/assets/dfa2aa5b-4006-4118-a2d6-71897621f48e)
+
+The next entries are as expected with the creation of certain files in the tmp directory, the only standout is the .bisis file at just over 10 MB,  suggesting it contains a more substantial payload, such as an executable, data, or script. It appears to be a core file within the attacker’s setup, possibly involved in data exfiltration or execution of commands.
+
+![image](https://github.com/user-attachments/assets/20230642-6c1a-4d3d-af37-62700f9cc9f7)
+
+The events indicate that a malicious process on sakel-lunix-2 is creating files and modifying a cron job under the root account. The process, located in /var/tmp/.update-logs, is frequently creating small files (like .b) and setting up or modifying scheduled tasks using cron to ensure persistence and potentially execute malicious commands at regular intervals. The cron job likely enables ongoing attacks or data exfiltration. The creation of files with obfuscated filenames that always start with "tmp." after each sequence of malicious activities, particularly in the /var/spool/cron/crontabs/ directory, suggests that the attacker is likely using these files to store or execute temporary tasks via cron. These files could be acting as placeholders or additional cron jobs to execute malicious commands, further solidifying persistence on the system. This would be the end of the file events for the 14th of March 2025.
+
+![image](https://github.com/user-attachments/assets/babb89e7-169d-4b7e-b528-7933e4227eb8)
+![image](https://github.com/user-attachments/assets/a1f50c9a-95f0-4d92-808a-34cef3aa613a)
+![image](https://github.com/user-attachments/assets/378db402-d394-4d2a-8368-294d39b7c755)
+![image](https://github.com/user-attachments/assets/f3c79dd0-ba7f-4306-ae62-4c561a0f2a01)
+
+the 17th of March 2025 would not see any new behavior from the malware.
+
+### Network Events ###
+
+**Query Used**:
+```kql
+DeviceNetworkEvents
+| where DeviceName == "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"
+| project Timestamp, DeviceName, ActionType, RemoteIP, InitiatingProcessFileSize, RemotePort,Protocol, RemoteIPType, InitiatingProcessFolderPath, InitiatingProcessParentFileName, InitiatingProcessAccountName, InitiatingProcessCommandLine, InitiatingProcessId
+| order by Timestamp asc
+```
+
+The previous query did lead us to find an event that had /dev/shm/.x/network scan the internal private network by making a connection request to 10.0.0.0 at 0546 AM on March 14th 2025, as previously stated this could be lateral movement and we will further investigate if other devices on the network have been compromised near the end of this report. Now around 0548 AM, we notice a connection request to the public IP address 140.186.11.236 over port 22 (SSH), initiated from the process located at /var/tmp/.update-logs/.bisis, suggests that the attacker is attempting to establish an SSH connection. The use of --userauth none indicates that the connection is trying to bypass authentication, likely exploiting a weak or misconfigured SSH server at the remote IP.
+
+![image](https://github.com/user-attachments/assets/881a6b2e-8288-4e50-88dc-0184b3da5ce7)
+
+further investgiation found that numerous IPs were targeted: 
+March 17, 2025:
+
+March 17, 2025, 4:00 AM: 47,793 times
+
+March 17, 2025, 3:00 AM: 37,360 times
+
+In comparison with the earlier data from March 14, 2025:
+
+8:00 AM: 26,601 times
+
+7:00 AM: 32,950 times
+
+6:00 AM: 30,063 times
+
+5:00 AM: 7,727 times
+
+This sharp rise, particularly between March 14 and March 17, suggests an escalation in connection attempts. It could indicate the process is part of a larger, more aggressive automated attack or persistent unauthorized access attempt. Investigating the process's origin, activity on the affected machine, and connection details would be crucial in determining the cause and mitigating the impact.
+
+**Query Used**:
+```kql
+DeviceNetworkEvents
+| where DeviceName == "sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net"
+| where InitiatingProcessCommandLine contains "/var/tmp/.update-logs/./.bisis ssh -o /var/tmp/.update-logs/data.json --userauth none --timeout 8"
+| summarize IPTargetedCount = count() by bin(Timestamp, 1h)
+| order by Timestamp desc
+```
+
+![image](https://github.com/user-attachments/assets/9da72e08-c76e-4269-8fb4-aa7b60bb8703)
 
 
 ### Summary of Findings
