@@ -5,6 +5,16 @@
 - **EDR Platform**: Microsoft Defender for Endpoint
 - **Kusto Query Language (KQL)**
 
+## UPDATE 03/25/2025
+DIICOT Threat Group Malware Campaign Reference
+In alignment with ongoing investigations, parallels have been drawn between the recent events involving compromised devices and the tactics observed in the DIICOT Threat Group's malware campaign. According to research by Wiz.io, the DIICOT group has been actively employing sophisticated malware to compromise cloud infrastructures, leveraging vulnerabilities within the Linux operating system to execute data exfiltration and persistent attacks.
+
+The tactics used, such as frequent file creation events, obfuscated filenames, and unauthorized SSH connection attempts, mirror the behavior noted within the compromised devices in this report, such as sakel-lunix-2.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net and linux-programatic-ajs.p2zfvso05mlezjev3ck4vqd3kd.cx.internal.cloudapp.net. The creation of obfuscated files like .bisis in /var/tmp/.update-logs aligns with DIICOT's methods to maintain persistence and escalate privileges on infected hosts.
+
+Wiz.io's analysis reveals the DIICOT group's ability to exploit weak or misconfigured services and abuse privileges, which further emphasizes the need for stringent monitoring, hardening of configurations, and proactive remediation steps for the affected systems identified in this investigation.
+
+For further details, refer to the original article: DIICOT Threat Group Malware Campaign(https://www.wiz.io/blog/diicot-threat-group-malware-campaign)
+
 ## Scenario
 Your SOC team received an urgent email from Microsoft Azure Safeguards Team
 regarding potential misuse of Azure resources. Microsoft flagged your subscription for
