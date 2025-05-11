@@ -29,6 +29,7 @@ AzureNetworkAnalytics_CL
     DeniedConnections = countif(FlowStatusStr == "D")
   by DestPort_d
 | sort by TotalConnections desc
+```
 
 ## 📊 Summary of Findings (Last 30 Days)
 
