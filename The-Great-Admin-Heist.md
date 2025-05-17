@@ -164,9 +164,10 @@ BitSentinelCore.exe -> cmd.exe -> schtasks.exe
                                v
 +----------------+     +------+-------+     +------------------+
 |   Adversary    |<--->|   Capability  |<--->|      Victim      |
-| Phantom Hackers|     | Fake AV, Key  |     |  Bubba @ anthony |
-|                |     | logger, Tasks |     |    -001          |
+| Phantom Hackers|     | Bit AV, Reg   |     |  Bubba @ anthony |
+|                |     | Key, .lnk, ST |     |       -001       |
 +----------------+     +---------------+     +------------------+
+
 
 
 
