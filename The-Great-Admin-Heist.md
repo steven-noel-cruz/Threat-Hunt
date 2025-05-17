@@ -147,6 +147,28 @@ BitSentinelCore.exe -> cmd.exe -> schtasks.exe
 
 ---
 
+## Diamond Model of Intrusion Analysis
+
+| Feature            | Description                                                                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Adversary**      | APT group **The Phantom Hackers** — actors targeting privileged accounts through phishing and stealth persistence                                                |
+| **Capability**     | Malware disguised as a fake antivirus (`BitSentinelCore.exe`), leveraging LOLBins like `csc.exe`, keylogging, registry persistence, and scheduled tasks          |
+| **Infrastructure** | Remote IPs from Nigeria (`102.88.21.215`) and the Philippines (`49.147.196.23`), custom malware staging in `ProgramData`, scheduled task `UpdateHealthTelemetry` |
+| **Victim**         | Bubba Rockerfeatherman III — privileged IT admin at Acme Corp on workstation `anthony-001`                                                                       |
+
+                +------------------+
+                |   Infrastructure |
+                |   (IPs, .exe, ST)| 
+                +--------+---------+
+                         |
++-----------+     +------+-------+     +-------------+
+| Adversary | <-> |  Capability  | <-> |   Victim    |
+| Phantom   |     | Fake AV +    |     | Bubba /     |
+| Hackers   |     | Persistence  |     | anthony-001 |
++-----------+     +--------------+     +-------------+
+
+---
+
 ## Lessons Learned
 
 * Malware impersonating legitimate tools can easily evade static detection without behavioral telemetry.
