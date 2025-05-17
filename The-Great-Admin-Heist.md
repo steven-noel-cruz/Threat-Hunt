@@ -156,16 +156,23 @@ BitSentinelCore.exe -> cmd.exe -> schtasks.exe
 | **Infrastructure** | Remote IPs from Nigeria (`102.88.21.215`) and the Philippines (`49.147.196.23`), custom malware staging in `ProgramData`, scheduled task `UpdateHealthTelemetry` |
 | **Victim**         | Bubba Rockerfeatherman III — privileged IT admin at Acme Corp on workstation `anthony-001`                                                                       |
 
-                +------------------+
-                |   Infrastructure |
-                |   (IPs, .exe, ST)| 
-                +--------+---------+
-                         |
-+-----------+     +------+-------+     +-------------+
-| Adversary | <-> |  Capability  | <-> |   Victim    |
-| Phantom   |     | Fake AV +    |     | Bubba /     |
-| Hackers   |     | Persistence  |     | anthony-001 |
-+-----------+     +--------------+     +-------------+
+                +-----------------------+
+                |     Infrastructure    |
+                | (IPs, LOLBins, Tasks) |
+                +-----------+-----------+
+                            |
+   +----------------+       |       +------------------+
+   |    Adversary   |<------+------>|     Victim       |
+   | Phantom Hackers|               | Bubba @ anthony  |
+   +----------------+               +------------------+
+                            |
+                +-----------+-----------+
+                |      Capability       |
+                | BitSentinelCore.exe  |
+                | systemreport.lnk     |
+                | Registry + Task mods |
+                +-----------------------+
+
 
 ---
 
