@@ -53,54 +53,70 @@ DeviceLogonEvents
 
 ### File Write via Legitimate LOLBin:
 
+Pivoting to file creation events, I filtered for files created outside normal patterns on this device.
+This revealed the drop of BitSentinelCore.exe—a fake antivirus program masquerading as a legitimate security tool. 
+Using the parent process ID, I traced its origin to csc.exe, Microsoft's legitimate C# compiler, which was exploited to compile and place the malware on disk
+
+
 ```kql
-DeviceProcessEvents
-| where FileName == "csc.exe"
-| where ProcessCommandLine has "BitSentinelCore"
+DeviceFileEvents
+| where FileName == "BitSentinelCore"
 ```
+![image](https://github.com/user-attachments/assets/ce2d22b5-022c-4f55-94ec-09a890fb579c)
 
 📌 *Dropper Used:* `csc.exe`
 
 ### Execution Path:
-
+To validate execution, I examined the initiating process and found the command line and path traced back to explorer.exe.
+This strongly indicated that Bubba himself manually executed the malware.
 ```kql
 DeviceProcessEvents
 | where FileName == "BitSentinelCore.exe" or InitiatingProcessFileName == "BitSentinelCore.exe"
 ```
+![image](https://github.com/user-attachments/assets/cb242707-d915-4c3a-9b28-c0b633651ff7)
 
-📌 *Launcher:* PowerShell script by attacker
 
 ### Keylogger Artifact:
+Following execution, a suspicious file named systemreport.lnk appeared in the AppData folder.
+Its creation shortly after malware execution suggested keylogging or surveillance functionality—particularly because this was the only occurrence of that file on the system, and its timing implied intentional deployment for data collection.
 
 ```kql
 DeviceFileEvents
-| where FileName == "systemreport.lnk"
-| where FolderPath has "Startup"
+| where DeviceName contains "anthony-001"
+| where InitiatingProcessRemoteSessionDeviceName contains "bubba"
+| where Timestamp >= datetime("2025-05-07T02:00:36.794406Z")
 ```
+![image](https://github.com/user-attachments/assets/7b3740ff-14cf-457b-a440-56bb2fb7bb0d)
 
 📌 *Artifact:* `systemreport.lnk`
 
 ### Registry Persistence:
-
+Continuing, I reviewed registry modifications. A persistence key was identified in: HKEY_CURRENT_USER\S-1-5-21-2009930472-1356288797-1940124928-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+This entry was configured to launch BitSecSvc (an alias of the malware) on boot, establishing persistence across reboots.
 ```kql
 DeviceRegistryEvents
 | where RegistryKey contains "Run"
 | where RegistryValueData has "BitSentinelCore"
 ```
+![image](https://github.com/user-attachments/assets/3a05e25f-e17e-4d55-9082-b603d88490ce)
 
 📌 *Key:* `HKCU\...\Run`
 
 ### Scheduled Task Creation:
-
+Additional persistence was confirmed through scheduled task creation. 
+The most notable task was titled UpdateHealthTelemetry, a deceptively benign name likely designed to blend in with legitimate Windows health-related processes.
+This ensured long-term malware execution during system uptime.
 ```kql
 DeviceProcessEvents
-| where ProcessCommandLine has "/create" and FileName == "schtasks.exe"
+| where DeviceName contains "anthony"
+| where ProcessCommandLine has "BitSentinelCore"
 ```
+![image](https://github.com/user-attachments/assets/fcbbbd34-6a90-4b43-82ee-a0b8d0c652cc)
 
 📌 *Task Name:* `UpdateHealthTelemetry`
 
 ### Process Chain:
-
+Pulling together the execution chain, we confirmed the sequence:
 ```text
 BitSentinelCore.exe -> cmd.exe -> schtasks.exe
 ```
@@ -142,5 +158,3 @@ BitSentinelCore.exe -> cmd.exe -> schtasks.exe
 
 **Report Completed By:** Steven Cruz
 **Status:** ✅ All 8 flags investigated and confirmed
-
-**GitHub/Portfolio Ready** 🔐
