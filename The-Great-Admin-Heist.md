@@ -40,11 +40,14 @@ At Acme Corp, the privileged IT admin **Bubba Rockerfeatherman III** unknowingly
 ## Timeline & Queries Used
 
 ### Initial Malware Execution:
-
+The investigation began by analyzing DeviceLogonEvents on the target system anthony-001 to determine if a breach had occurred following brute force behavior.
+The logs revealed repeated authentication attempts from IP 102.88.21.215—an address geolocated in Nigeria—which was ultimately unsuccessful. 
+However, shortly afterward, a successful logon was observed from IP 49.147.196.23 (based in the Philippines) under a device name referencing Bubba, the privileged IT admin.
 ```kql
 DeviceLogonEvents
 | where DeviceName contains "anthony-001"
 ```
+![image](https://github.com/user-attachments/assets/e54fd2ae-9dc5-4fee-a3e7-4075c6f62295)
 
 📌 *Timestamp:* `2025-05-07T02:00:36.794406Z`
 
