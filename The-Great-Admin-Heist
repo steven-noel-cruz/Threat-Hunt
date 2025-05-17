@@ -1,0 +1,143 @@
+# Threat Hunt Report: The Great Admin Heist Investigation
+
+**Participant:** Steven Cruz
+**Date:** May 2025
+
+## Platforms and Languages Leveraged
+
+**Platforms:**
+
+* Microsoft Defender for Endpoint (MDE)
+* Log Analytics Workspace
+* Windows 10-based corporate workstation (`anthony-001`)
+
+**Languages/Tools:**
+
+* Kusto Query Language (KQL) for querying device events, registry modifications, and persistence artifacts
+* Native Windows utilities: `powershell.exe`, `cmd.exe`, `schtasks.exe`, `csc.exe`
+
+---
+
+## Scenario
+
+At Acme Corp, the privileged IT admin **Bubba Rockerfeatherman III** unknowingly became the target of a sophisticated APT group called **The Phantom Hackers**. These attackers leveraged phishing and stealthy execution tactics, including masquerading malware, Windows LOLBins, and multiple persistence techniques, to breach the system and maintain long-term access.
+
+---
+
+## Key Observations
+
+* **Initial Vector:** A fake antivirus binary named `BitSentinelCore.exe` was dropped into `C:\ProgramData\`.
+* **Dropper Used:** Legitimate Microsoft-signed binary `csc.exe` (C# compiler) was abused to compile and drop the malware.
+* **Execution:** The malware was executed via PowerShell on **2025-05-07T02:00:36.794406Z**, marking the root of the malicious chain.
+* **Keylogger:** A deceptive shortcut `systemreport.lnk` was dropped in the Startup folder to enable keystroke capture on logon.
+* **Registry Persistence:** Auto-run registry key was created at:
+  `HKEY_CURRENT_USER\S-1-5-21-2009930472-1356288797-1940124928-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
+* **Scheduled Task:** Named `UpdateHealthTelemetry`, this ensured long-term execution of the malware.
+* **Process Chain:** `BitSentinelCore.exe -> cmd.exe -> schtasks.exe`
+
+---
+
+## Timeline & Queries Used
+
+### Initial Malware Execution:
+
+```kql
+DeviceLogonEvents
+| where DeviceName contains "anthony-001"
+```
+
+📌 *Timestamp:* `2025-05-07T02:00:36.794406Z`
+
+### File Write via Legitimate LOLBin:
+
+```kql
+DeviceProcessEvents
+| where FileName == "csc.exe"
+| where ProcessCommandLine has "BitSentinelCore"
+```
+
+📌 *Dropper Used:* `csc.exe`
+
+### Execution Path:
+
+```kql
+DeviceProcessEvents
+| where FileName == "BitSentinelCore.exe" or InitiatingProcessFileName == "BitSentinelCore.exe"
+```
+
+📌 *Launcher:* PowerShell script by attacker
+
+### Keylogger Artifact:
+
+```kql
+DeviceFileEvents
+| where FileName == "systemreport.lnk"
+| where FolderPath has "Startup"
+```
+
+📌 *Artifact:* `systemreport.lnk`
+
+### Registry Persistence:
+
+```kql
+DeviceRegistryEvents
+| where RegistryKey contains "Run"
+| where RegistryValueData has "BitSentinelCore"
+```
+
+📌 *Key:* `HKCU\...\Run`
+
+### Scheduled Task Creation:
+
+```kql
+DeviceProcessEvents
+| where ProcessCommandLine has "/create" and FileName == "schtasks.exe"
+```
+
+📌 *Task Name:* `UpdateHealthTelemetry`
+
+### Process Chain:
+
+```text
+BitSentinelCore.exe -> cmd.exe -> schtasks.exe
+```
+
+---
+
+## Summary of Findings
+
+| Flag | Description                   | Answer/Value                                     |
+| ---- | ----------------------------- | ------------------------------------------------ |
+| 1    | Fake AV binary                | `BitSentinelCore.exe`                            |
+| 2    | Dropper used to write malware | `csc.exe`                                        |
+| 3    | Initial execution method      | `BitSentinelCore.exe`                            |
+| 4    | Keylogger file dropped        | `systemreport.lnk`                               |
+| 5    | Registry persistence path     | `HKEY_CURRENT_USER\...\Run`                      |
+| 6    | Scheduled task name           | `UpdateHealthTelemetry`                          |
+| 7    | Process chain                 | `BitSentinelCore.exe -> cmd.exe -> schtasks.exe` |
+| 8    | Root cause timestamp          | `2025-05-07T02:00:36.794406Z`                    |
+
+---
+
+## Response Actions
+
+* **Immediate Block:** Hashes and process signatures of `BitSentinelCore.exe` added to threat blocklists
+* **Persistence Removal:** Startup `.lnk` file, registry key, and scheduled task manually removed
+* **Telemetry Expansion:** Queries extended to check lateral movement beyond `anthony-001`
+* **Awareness:** Flag shared with Blue Team and Detection Engineering for rule creation
+
+---
+
+## Lessons Learned
+
+* Malware impersonating legitimate tools can easily evade static detection without behavioral telemetry.
+* Scheduled tasks with realistic system names (`UpdateHealthTelemetry`) can persist undetected.
+* LOLBins like `csc.exe` can be abused to compile and deploy malware post-download.
+* Registry and Startup folders remain prime persistence targets.
+
+---
+
+**Report Completed By:** Steven Cruz
+**Status:** ✅ All 8 flags investigated and confirmed
+
+**GitHub/Portfolio Ready** 🔐
