@@ -29,7 +29,7 @@ At Acme Corp, the privileged IT admin **Bubba Rockerfeatherman III** unknowingly
 * **Initial Vector:** A fake antivirus binary named `BitSentinelCore.exe` was dropped into `C:\ProgramData\`.
 * **Dropper Used:** Legitimate Microsoft-signed binary `csc.exe` (C# compiler) was abused to compile and drop the malware.
 * **Execution:** The malware was executed via PowerShell on **2025-05-07T02:00:36.794406Z**, marking the root of the malicious chain.
-* **Keylogger:** A deceptive shortcut `systemreport.lnk` was dropped in the Startup folder to enable keystroke capture on logon.
+* **Keylogger:** A deceptive shortcut `systemreport.lnk` was dropped in the AppData folder to enable keystroke capture on logon.
 * **Registry Persistence:** Auto-run registry key was created at:
   `HKEY_CURRENT_USER\S-1-5-21-2009930472-1356288797-1940124928-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run`
 * **Scheduled Task:** Named `UpdateHealthTelemetry`, this ensured long-term execution of the malware.
