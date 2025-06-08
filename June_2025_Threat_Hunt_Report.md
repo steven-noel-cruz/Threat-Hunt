@@ -1,9 +1,20 @@
 
-# Threat Hunt Report: **Deep Access – The Adversary**
+# 🕵️‍♂️ June 2025 Threat Hunt: *"Deep Access – The Adversary"*
 
-**Participant:** Steven Cruz  
-**Date:** June 2025  
-**Scenario:** A coordinated APT operation leverages PowerShell abuse, registry manipulation, scheduled tasks, and stealthy lateral movement across two compromised machines in a supply-chain-style campaign.  
+> *"Not all breaches sound alarms. Some whisper their presence, slipping through telemetry and leaving behind only the faintest trace. Our job: amplify the signal."*
+
+In June 2025, a coordinated threat hunt was conducted across simulated enterprise environments to investigate stealthy adversarial behaviors that mimic advanced persistent threat (APT) tactics. The scenario focused on tracking malicious actions across two virtual machines, designed to replicate real-world intrusion patterns: covert PowerShell usage, registry manipulation, scheduled task abuse, and lateral movement — all executed without triggering traditional alerts.
+
+The adversary’s playbook was methodical: from initial PowerShell-based execution on a short-lived system to persistence via registry keys and scheduled tasks, culminating in credential dumping, internal reconnaissance, and data staging for exfiltration. Each technique was a breadcrumb — and our task was to follow them all.
+
+This report includes:
+
+- 📅 Timeline reconstruction of adversarial activity across **`acolyte756`** and **`victor-disa-vm`**
+- 📜 Detailed queries using Microsoft 365 Defender Advanced Hunting (KQL)
+- 🧠 MITRE ATT&CK mapping to understand TTP alignment
+- 💠 Diamond Model analysis for adversary profiling
+- 🧪 Evidence-based summaries supporting each flag and behavior discovered
+
 
 ---
 
