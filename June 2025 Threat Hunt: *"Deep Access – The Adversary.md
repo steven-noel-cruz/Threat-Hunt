@@ -3,9 +3,9 @@
 
 > *"Not all breaches sound alarms. Some whisper their presence, slipping through telemetry and leaving behind only the faintest trace. Our job: amplify the signal."*
 
-In June 2025, a coordinated threat hunt was conducted across simulated enterprise environments to investigate stealthy adversarial behaviors that mimic advanced persistent threat (APT) tactics. The scenario focused on tracking malicious actions across two virtual machines, designed to replicate real-world intrusion patterns: covert PowerShell usage, registry manipulation, scheduled task abuse, and lateral movement — all executed without triggering traditional alerts.
+In June 2025, a coordinated threat hunt was conducted across simulated enterprise environments to investigate stealthy adversarial behaviors that mimic advanced persistent threat (APT) tactics. The scenario focused on tracking malicious actions across two virtual machines, designed to replicate real-world intrusion patterns: covert PowerShell usage, registry manipulation, scheduled task abuse, and lateral movement, all executed without triggering traditional alerts.
 
-The adversary’s playbook was methodical: from initial PowerShell-based execution on a short-lived system to persistence via registry keys and scheduled tasks, culminating in credential dumping, internal reconnaissance, and data staging for exfiltration. Each technique was a breadcrumb — and our task was to follow them all.
+The adversary’s playbook was methodical: from initial PowerShell-based execution on a short-lived system to persistence via registry keys and scheduled tasks, culminating in credential dumping, internal reconnaissance, and data staging for exfiltration. Each technique was a breadcrumb and our task was to follow them all.
 
 This report includes:
 
