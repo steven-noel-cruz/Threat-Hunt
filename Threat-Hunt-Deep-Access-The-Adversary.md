@@ -506,8 +506,6 @@ Outbound communications to unknown or disallowed external destinations can signa
 
 ![Screenshot 2025-06-08 170042](https://github.com/user-attachments/assets/2479efdf-5396-494a-b712-63e39584ac02)
 
-![Screenshot 2025-06-08 170440](https://github.com/user-attachments/assets/f6bf77f9-dfc0-4a40-b5ab-9a55767a693e)
-
 ![Screenshot 2025-06-08 170830](https://github.com/user-attachments/assets/2ce19734-4b9b-454a-b47e-0ae77cba0e4e)
 
 **KQL Querys Used:**
