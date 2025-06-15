@@ -103,11 +103,11 @@ DeviceProcessEvents
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/fd7b2f8d-4379-43fe-94d9-bfb99a1c6114)
-![image](https://github.com/user-attachments/assets/fd7b2f8d-4379-43fe-94d9-bfb99a1c6114)
+![Screenshot 2025-06-08 153355](https://github.com/user-attachments/assets/97e6a20f-f466-48a3-a8a2-a3f94b432cd7)
 
-![image](https://github.com/user-attachments/assets/465bc725-9cef-4a4a-9be5-db8e6dc963c3)
-![image](https://github.com/user-attachments/assets/465bc725-9cef-4a4a-9be5-db8e6dc963c3)
+![Screenshot 2025-06-08 153412](https://github.com/user-attachments/assets/95cdad85-736a-4b37-87e9-74c522f36b90)
+
+
 
 **Why This Matters:**
 The device acolyte756 stood out with significantly fewer logged processes and a first and last seen time of May 24, 2025 6:35:57 PM to May 24, 2025 11:38:08 PM, aligning with the behavior of a temporary virtual machine likely used as an initial beachhead.
