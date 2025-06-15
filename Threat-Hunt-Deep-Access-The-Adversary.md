@@ -137,7 +137,6 @@ DeviceProcessEvents
 ```
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/add317f9-b22b-48c4-88dd-adf1f0c36be9)
 ![Screenshot 2025-06-08 153905](https://github.com/user-attachments/assets/ccfc6bb9-b1c6-492a-aac8-9a9adbbe670c)
 
 **Why This Matters:**
@@ -169,7 +168,7 @@ DeviceNetworkEvents
 ```
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/c95f9127-d145-406d-9884-c5f40bc50c3f)
+![Screenshot 2025-06-08 154641](https://github.com/user-attachments/assets/6251de70-2972-49a7-8910-355b9d00d23a)
 
 **Why This Matters:**
 The domain eoqsu1hq6e9ulga.m.pipedream.net was contacted via PowerShell from a system with no business context for such communication. This domain resembles a known technique for simulating beaconing or acting as a placeholder for dynamic C2 infrastructure. The metaphor “hollow tube” in the hint refers to a beaconing channel without obvious data flow.
@@ -200,7 +199,8 @@ DeviceRegistryEvents
 ```
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/53a25563-96e0-4a29-b1e3-974ab12328ab)
+![Screenshot 2025-06-08 155119](https://github.com/user-attachments/assets/5a27ba1d-515b-457d-892f-3b8e6c7ba545)
+
 
 **Why This Matters:**
 The script C2.ps1 was set to auto-run via both registry and scheduled task creation. This double persistence strategy enhances stealth and guarantees execution upon user logon or system reboot.
@@ -229,7 +229,8 @@ DeviceRegistryEvents
 ```
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/b1672809-26bb-4265-aecf-2b317293415c)
+![Screenshot 2025-06-08 155816](https://github.com/user-attachments/assets/94f48987-1c85-486c-8be0-aec64ccd3a08)
+
 
 **Why This Matters:**
 The use of a scheduled task (SimC2Task) alongside registry persistence provides redundancy, increasing the malware's chance of executing reliably while remaining under the radar.
@@ -259,7 +260,7 @@ DeviceProcessEvents
 ```
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/a635acca-182f-4f42-bc3d-1083c3765fdd)
+![Screenshot 2025-06-08 160338](https://github.com/user-attachments/assets/8098c1db-4ddc-48c3-b2f8-9188f89a4db3)
 
 **Why This Matters:**
 Encoding commands hides them from basic logging and detection tools. The presence of base64-encoded PowerShell suggests the adversary attempted to conceal their actions during execution, even in a simulated scenario.
@@ -295,6 +296,7 @@ DeviceProcessEvents
 **Evidence:**
 
 ![Screenshot 2025-06-08 161137](https://github.com/user-attachments/assets/b9f4459a-1fb0-4ae6-a9f3-b6bda5db1972)
+![Screenshot 2025-06-08 161137](https://github.com/user-attachments/assets/7b0abdc1-04cf-4074-ab30-c9807175e360)
 
 **Why This Matters:**
 Downgrading to PowerShell v2 is a known tactic to bypass script block logging and modern AMSI-based (Antimalware Scan Interface) protections. This enables stealthy script execution without full telemetry capture.
