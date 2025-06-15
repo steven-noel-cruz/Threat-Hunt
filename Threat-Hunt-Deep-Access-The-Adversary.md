@@ -138,6 +138,7 @@ DeviceProcessEvents
 **Evidence:**
 
 ![image](https://github.com/user-attachments/assets/add317f9-b22b-48c4-88dd-adf1f0c36be9)
+![Screenshot 2025-06-08 153905](https://github.com/user-attachments/assets/ccfc6bb9-b1c6-492a-aac8-9a9adbbe670c)
 
 **Why This Matters:**
 This timestamp (2025-05-25T09:14:02.3908261Z) marks the initial use of PowerShell. This invocation runs PowerShell silently, without logo or profile loading, which is often used to minimize visibility during malicious scripting. A key indicator of suspicious scripting activity that may have kicked off the broader intrusion sequence.
