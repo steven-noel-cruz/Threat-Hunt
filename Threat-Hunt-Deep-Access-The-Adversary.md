@@ -295,7 +295,6 @@ DeviceProcessEvents
 ```
 **Evidence:**
 
-![Screenshot 2025-06-08 161137](https://github.com/user-attachments/assets/b9f4459a-1fb0-4ae6-a9f3-b6bda5db1972)
 ![Screenshot 2025-06-08 161137](https://github.com/user-attachments/assets/7b0abdc1-04cf-4074-ab30-c9807175e360)
 
 **Why This Matters:**
@@ -317,7 +316,7 @@ We analyzed process creation events from `acolyte756` for signs of outbound task
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/15c462e0-9e25-413b-8330-83fbded0dd77)
+![Screenshot 2025-06-08 161739](https://github.com/user-attachments/assets/2aeb795f-51b8-438d-9ef5-79b6e48dc4e3)
 
 **KQL Query:**
 ```kql
@@ -349,7 +348,7 @@ On the secondary system `victor-disa-vm`, a `.lnk` file named `savepoint_sync.ln
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/a61ea5ea-dd11-46ee-925b-ceef8c6f97ea)
+![Screenshot 2025-06-08 162345](https://github.com/user-attachments/assets/c25daadc-a23b-4dcf-92e1-84e4a20c1201)
 
 **KQL Query Used:**
 ```kql
@@ -395,7 +394,7 @@ DeviceRegistryEvents
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/2d6dcca0-e16f-48ee-a4c7-37f1e0c72b35)
+![Screenshot 2025-06-08 163204](https://github.com/user-attachments/assets/d35367a9-013e-4f86-874c-50932c288b6c)
 
 **Why This Matters:**
 Registry-based persistence remains a common and effective technique for attackers to maintain access without needing login sessions. This PowerShell invocation matches known malicious patterns and directly ties back to the previously discovered .lnk artifact further confirming system compromise and attacker foothold.
@@ -416,7 +415,8 @@ After lateral movement onto `victor-disa-vm`, the system initiated outbound conn
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/7f84a951-5681-47ea-8742-10ab5e57638d)
+![Screenshot 2025-06-08 163751](https://github.com/user-attachments/assets/1a31b522-e65d-4a3a-a715-653280326abb)
+
 
 **KQL Query Used:**
 ```kql
@@ -445,7 +445,7 @@ Sophisticated adversaries sometimes bypass scheduled tasks and registry autoruns
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/7ca599d2-86aa-4b0a-8f3e-2cb564b0e6bd)
+![Screenshot 2025-06-08 164759](https://github.com/user-attachments/assets/70b5940f-c7fd-4a57-b1cf-27d8acaf1cd1)
 
 **KQL Query Used:**
 ```kql
@@ -474,7 +474,7 @@ Even simulated credential access leaves behavioral traces. Attackers often imita
 
 **Evidence:**
 
-![Screenshot 2025-06-08 165422](https://github.com/user-attachments/assets/d3185c80-a01e-43dc-84fc-75e5f411b385)
+![Screenshot 2025-06-08 165422](https://github.com/user-attachments/assets/4843c996-2c75-431f-877f-b5bd2b4f56cc)
 
 
 **KQL Query Used:**
@@ -504,10 +504,11 @@ Outbound communications to unknown or disallowed external destinations can signa
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/be0e5a0f-944e-45de-af6e-74818091ffad)
+![Screenshot 2025-06-08 170042](https://github.com/user-attachments/assets/2479efdf-5396-494a-b712-63e39584ac02)
 
-![image](https://github.com/user-attachments/assets/82da8506-4c01-45fc-9f4b-78786e200958)
+![Screenshot 2025-06-08 170440](https://github.com/user-attachments/assets/f6bf77f9-dfc0-4a40-b5ab-9a55767a693e)
 
+![Screenshot 2025-06-08 170830](https://github.com/user-attachments/assets/2ce19734-4b9b-454a-b47e-0ae77cba0e4e)
 
 **KQL Querys Used:**
 ```kql
@@ -537,7 +538,7 @@ Access logs involving time-sensitive or project-critical files, particularly doc
 
 **Evidence:**
 
-![image](https://github.com/user-attachments/assets/5e31761d-0adb-4a5d-bd21-0d78a83b0999)
+![Screenshot 2025-06-08 171504](https://github.com/user-attachments/assets/3825def1-d20e-414d-ab65-25750c4482be)
 
 **KQL Query Used:**
 ```kql
@@ -568,7 +569,8 @@ Before exfiltration, staging occurs. Files don’t always move immediately — a
 
 **Evidence:**  
 
-![image](https://github.com/user-attachments/assets/0b3c6fbe-21e5-4cb3-807a-bf94569c14b4)
+![Screenshot 2025-06-08 171925](https://github.com/user-attachments/assets/28cd665a-6147-4f9c-bf66-7ed29ee918ff)
+
 
 **KQL Query Used:**
 ```kql
@@ -592,7 +594,8 @@ Verify whether staged payloads were saved to disk.
 Unusual compressed file drops (`.zip`, `.7z`, `.rar`) especially in shared, public, or non-admin folders like `C:\Users\Public`, `C:\ProgramData`, or `C:\Temp`.
 
 **Evidence:**  
-![image](https://github.com/user-attachments/assets/a9dbcd2f-b4b5-4b92-af0c-9704f2de29b7)
+
+![Screenshot 2025-06-08 172605](https://github.com/user-attachments/assets/87eab110-3db0-445b-8e67-7c8dfd26b443)
 
 **KQL Query Used:**
 ```kql
@@ -616,7 +619,8 @@ Identify automation set to invoke recently dropped content.
 Scheduled task creation events (`schtasks.exe`, `Register-ScheduledTask`, etc.) that reference suspicious or non-standard script names, especially in public or user-writable directories.
 
 **Evidence:**  
-![image](https://github.com/user-attachments/assets/f90b5de8-3dfa-45b1-8d52-edddb7a0e83b)
+
+![Screenshot 2025-06-08 172954](https://github.com/user-attachments/assets/5819ff03-2ba4-4bd8-bd2b-58f30f3d4474)
 
 **KQL Query Used:**
 ```kql
