@@ -536,20 +536,23 @@ Access logs involving time-sensitive or project-critical files, particularly doc
 
 **Evidence:**
 
-![Screenshot 2025-06-08 171504](https://github.com/user-attachments/assets/3825def1-d20e-414d-ab65-25750c4482be)
+![image](https://github.com/user-attachments/assets/c3c2106d-ae21-4b6c-907b-d4a2a6a43a3c)
+
+![Screenshot 2025-06-19 182954](https://github.com/user-attachments/assets/5020dfb3-5ca9-404d-85b1-bf8914c8cfbd)
+
+
 
 **KQL Query Used:**
 ```kql
-DeviceFileEvents
+DeviceProcessEvents
 | where DeviceName contains "victor"
-| where FolderPath contains "2025"
-| where FileName endswith ".docx" or FileName endswith ".pdf" or FileName endswith ".word"
-| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+| where ProcessCommandLine contains ".docx"
+| project Timestamp, ActionType, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, ProcessCommandLine
 | order by Timestamp asc
 ```
 
 **Why This Matters:**
-On May 25, 2025, the attacker accessed RolloutPlan_v8_477.docx, located in a directory for Ops Leadership and Risk Management planning for December 2025. This reveals targeted interest in future organizational strategies. Whether for competitive intelligence or extortion, such access confirms adversary focus on high-value data.
+The document was accessed through a standard process chain (userinit.exe → explorer.exe → wordpad.exe), confirming that a logged-in user (or impersonated session) interacted with a strategically sensitive file. The filename and folder structure (2025-12) suggest it contains future operational planning, making it a high-value target. Whether accessed manually or by an adversary operating under a hijacked session, this confirms interest in forward-looking leadership material—potentially useful for espionage, extortion, or disruption.
 
 ### 📦 Flag 14 – Tool Packaging Activity
 
