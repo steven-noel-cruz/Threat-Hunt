@@ -145,7 +145,8 @@ DeviceProcessEvents
 | project Timestamp, DeviceName, ProcessCommandLine, SHA256, InitiatingProcessFileName
 | sort by Timestamp asc
 ```
-![image](https://github.com/user-attachments/assets/9ae6bc8f-29f2-4a58-9a1e-1cf42f9280c8)
+<img width="1462" height="184" alt="9ae6bc8f-29f2-4a58-9a1e-1cf42f9280c8" src="https://github.com/user-attachments/assets/ed4168d4-03b0-40bb-8bda-c32583d16069" />
+
 
 ### 📄 Flag 3 – Sensitive Document Access
 
@@ -174,7 +175,8 @@ DeviceEvents
 | where FolderPath contains "board"
 | project Timestamp, DeviceName, ActionType, FileName, FolderPath
 ```
-![image](https://github.com/user-attachments/assets/f1c7b00f-1655-453f-ba7a-2d21bf07712c)
+<img width="1147" height="270" alt="f1c7b00f-1655-453f-ba7a-2d21bf07712c" src="https://github.com/user-attachments/assets/dc7d25e6-489d-490b-af0e-5153400fc4a2" />
+
 
 ### ⏱️ Flag 4 – Last Manual Access to File
 
@@ -207,7 +209,8 @@ DeviceEvents
 | where FolderPath contains "board"
 | project Timestamp, DeviceName, ActionType, FileName, FolderPath
 ```
-![image](https://github.com/user-attachments/assets/cf45ac7b-93f4-40fe-9e1f-b458b6fa583a)
+<img width="798" height="41" alt="cf45ac7b-93f4-40fe-9e1f-b458b6fa583a" src="https://github.com/user-attachments/assets/9dc346d0-db81-4f34-af8c-846ddd3fffb6" />
+
 
 ### ⚙️ Flag 5 – LOLBin Usage: bitsadmin
 
@@ -231,7 +234,8 @@ DeviceProcessEvents
 | project Timestamp, DeviceName,FileName , ProcessCommandLine, InitiatingProcessFileName
 | sort by Timestamp asc
 ```
-![image](https://github.com/user-attachments/assets/8c64117d-905c-45e7-a06d-870483997136)
+<img width="1593" height="146" alt="8c64117d-905c-45e7-a06d-870483997136" src="https://github.com/user-attachments/assets/90c04309-ae3c-4937-a477-50bd1f00f80f" />
+
 
 ### 💾 Flag 6 – Suspicious Payload Deployment
 
@@ -261,7 +265,8 @@ DeviceFileEvents
 | project Timestamp, DeviceName, ActionType, FileName, FolderPath
 ```
 
-![image](https://github.com/user-attachments/assets/df258a37-6bd0-40a1-8d68-17c518e7f47a)
+<img width="1177" height="90" alt="df258a37-6bd0-40a1-8d68-17c518e7f47a" src="https://github.com/user-attachments/assets/9e786a76-ae6e-4b73-b779-2b85d688c6c0" />
+
 
 ### 📎 Flag 7 – HTA Abuse via LOLBin
 
@@ -285,7 +290,8 @@ DeviceProcessEvents
 | project Timestamp, DeviceName, ProcessCommandLine
 ```
 
-![image](https://github.com/user-attachments/assets/fdcd5a52-b6e2-47c3-81b5-35e8ffa1054c)
+<img width="894" height="137" alt="fdcd5a52-b6e2-47c3-81b5-35e8ffa1054c" src="https://github.com/user-attachments/assets/69183010-6fa7-4e38-b64d-3829538e7775" />
+
 
 
 ### 🗂️ Flag 8 – ADS Execution Attempt
@@ -320,7 +326,8 @@ DeviceFileEvents
 | where FolderPath has @"C:\Users\Mich34L_id\AppData\Local\Temp"
 | project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessSHA1
 ```
-![image](https://github.com/user-attachments/assets/05cf2159-9c1c-4802-946f-d37a78ac5ab5)
+<img width="612" height="261" alt="05cf2159-9c1c-4802-946f-d37a78ac5ab5" src="https://github.com/user-attachments/assets/b694fa48-e98e-49f7-97c8-15bea1fb55cf" />
+
 
 ### 🗝️ Flag 9 – Registry Persistence Confirmation
 
@@ -356,7 +363,8 @@ DeviceRegistryEvents
 | project Timestamp, DeviceName, ActionType, RegistryKey, PreviousRegistryKey, RegistryValueName, PreviousRegistryValueName, InitiatingProcessCommandLine
 ```
 
-![image](https://github.com/user-attachments/assets/24aabf33-c115-4f50-8776-75412ceb6a27)
+<img width="1068" height="234" alt="24aabf33-c115-4f50-8776-75412ceb6a27" src="https://github.com/user-attachments/assets/12237500-7e73-4d93-b88d-513fd7ee17d8" />
+
 
 ### ⏰ Flag 10 – Scheduled Task Execution
 
@@ -394,7 +402,8 @@ DeviceProcessEvents
 | project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
 ```
 
-![Screenshot 2025-07-07 153614](https://github.com/user-attachments/assets/e607b4d1-a060-40e5-a3ce-ec0a64c76e15)
+<img width="1655" height="525" alt="e607b4d1-a060-40e5-a3ce-ec0a64c76e15" src="https://github.com/user-attachments/assets/a70760a0-4f63-4155-9cd0-2762cd92e1d4" />
+
 
 
 ### 🧭 Flag 11 – Target of Lateral Movement
@@ -431,7 +440,8 @@ DeviceProcessEvents
 | where ProcessCommandLine has @"/S"
 | project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
 ```
-![image](https://github.com/user-attachments/assets/1fe6deca-9bc1-4dd5-bd00-1823d7645b4f)
+<img width="1435" height="783" alt="1fe6deca-9bc1-4dd5-bd00-1823d7645b4f" src="https://github.com/user-attachments/assets/f7b74394-73f6-4bc8-901a-ec64b1338d88" />
+
 
 ### ⏱️ Flag 12 – Lateral Move Timestamp
 
@@ -463,7 +473,8 @@ DeviceProcessEvents
 | where ProcessCommandLine has @"/S"
 | project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
 ```
-![image](https://github.com/user-attachments/assets/b5c1c5a2-4086-4bd7-acdd-aa32f48c6000)
+<img width="1418" height="231" alt="b5c1c5a2-4086-4bd7-acdd-aa32f48c6000" src="https://github.com/user-attachments/assets/89e63654-2a16-405b-b9e6-aa92af7cdd04" />
+
 
 ### 📂 Flag 13 – Sensitive File Access
 
@@ -506,9 +517,11 @@ DeviceFileEvents
 | where FileName == "QuarterlyCryptoHoldings.docx"
 | project Timestamp, DeviceName, FileName, FolderPath, SHA256, InitiatingProcessRemoteSessionDeviceName
 ```
-![image](https://github.com/user-attachments/assets/a40dc9b7-1bd7-462b-9c88-a9f4e7d29a5e)
+<img width="561" height="202" alt="a40dc9b7-1bd7-462b-9c88-a9f4e7d29a5e" src="https://github.com/user-attachments/assets/3ed4ade9-a9c2-4dac-a26d-ef0bdd17955b" />
 
-![image](https://github.com/user-attachments/assets/f60c94a2-c756-4ba3-8704-27d3ff921ea1)
+<img width="788" height="196" alt="f60c94a2-c756-4ba3-8704-27d3ff921ea1" src="https://github.com/user-attachments/assets/0930c33e-4992-4961-beeb-75ce06098167" />
+
+
 
 ### ☁️ Flag 14 – Data Exfiltration Attempt
 
@@ -565,7 +578,8 @@ DeviceNetworkEvents
 | project Timestamp, DeviceName, RemoteUrl, InitiatingProcessMD5, InitiatingProcessRemoteSessionDeviceName
 ```
 
-![image](https://github.com/user-attachments/assets/f3440e1b-0787-4bbd-b0df-c9fa53fde588)
+<img width="1193" height="136" alt="f3440e1b-0787-4bbd-b0df-c9fa53fde588" src="https://github.com/user-attachments/assets/940171b9-78e2-448f-bf9c-e3a0d102d5da" />
+
 
 ### 🌐 Flag 15 – Destination of Exfiltration
 
@@ -609,7 +623,8 @@ DeviceNetworkEvents
 | project Timestamp, DeviceName, RemoteUrl, RemoteIP, InitiatingProcessMD5, InitiatingProcessRemoteSessionDeviceName
 ```
 
-![Screenshot 2025-07-07 183141](https://github.com/user-attachments/assets/1c33beda-2d23-421c-8212-dd1b6f98aaf2)
+<img width="1193" height="136" alt="1c33beda-2d23-421c-8212-dd1b6f98aaf2" src="https://github.com/user-attachments/assets/83abad89-3ceb-4cfa-b560-d96b8584436c" />
+
 
 
 ### 🧬 Flag 16 – PowerShell Downgrade Detection
@@ -648,7 +663,8 @@ DeviceProcessEvents
 | where ProcessCommandLine contains "-Version 2"
 | project Timestamp, DeviceName, ProcessCommandLine, ProcessRemoteSessionDeviceName
 ```
-![image](https://github.com/user-attachments/assets/53744d85-908b-4392-8d19-a888e73a762b)
+
+<img width="700" height="138" alt="53744d85-908b-4392-8d19-a888e73a762b" src="https://github.com/user-attachments/assets/161779b7-258d-49ab-9f29-4f7edb2ec349" />
 
 
 ### 🧹 Flag 17 – Log Clearing Attempt
@@ -683,7 +699,8 @@ DeviceProcessEvents
 | where ProcessCommandLine contains "cl Security"
 | project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime, ProcessRemoteSessionDeviceName
 ```
-![image](https://github.com/user-attachments/assets/703a42c4-90d7-4cde-a55b-afff1197e0c2)
+<img width="436" height="195" alt="703a42c4-90d7-4cde-a55b-afff1197e0c2" src="https://github.com/user-attachments/assets/5ef30f00-e5d1-4758-a0c7-1320f34454ca" />
+
 
 
 ---
