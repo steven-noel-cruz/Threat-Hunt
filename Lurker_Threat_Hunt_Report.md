@@ -81,9 +81,10 @@ DeviceProcessEvents
 | summarize Count = count() by DeviceName
 | sort by Count desc
 ```
-![image](https://github.com/user-attachments/assets/f098f6d9-0078-4330-bcf1-0cebd8431a66)
+<img width="327" height="763" alt="f098f6d9-0078-4330-bcf1-0cebd8431a66" src="https://github.com/user-attachments/assets/f99b60f6-4ed3-4991-a100-4319d8927c0a" />
 
-![image](https://github.com/user-attachments/assets/d3647d80-ad50-4063-8049-6b41c24e5a59)
+<img width="618" height="860" alt="d3647d80-ad50-4063-8049-6b41c24e5a59" src="https://github.com/user-attachments/assets/ada9a90a-05fe-430c-97fa-f5d585b999a1" />
+
 
 ### 🪪 Flag 1 – Initial PowerShell Execution
 
@@ -107,7 +108,8 @@ This PowerShell command represents the earliest deviation from baseline behavior
 | project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessFileName
 | sort by Timestamp asc
 ```
-![image](https://github.com/user-attachments/assets/20ce57f6-0f45-4047-889e-2f914630ae0e)
+<img width="1365" height="221" alt="20ce57f6-0f45-4047-889e-2f914630ae0e" src="https://github.com/user-attachments/assets/ef26ada3-0725-405b-a08d-069b5dfcac98" />
+
 
 ### 🛰️ Flag 2 – Reconnaissance Script Hash
 
