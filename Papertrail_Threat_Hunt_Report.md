@@ -275,7 +275,3 @@ DeviceProcessEvents
 4. Integrity review/restore HR data (`PromotionCandidates.csv`, Carlos Tanaka records).  
 5. Hunt for persistence across estate; remove `OnboardTracker.ps1` autoruns.  
 6. Centralize logs; add detections for `comsvcs.dll, MiniDump` and Defender tamper.
-
----
-
-*Prepared for GitHub upload.*
