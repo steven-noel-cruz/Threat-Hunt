@@ -110,6 +110,15 @@ DeviceProcessEvents
 - **CommandLine:** `"powershell.exe" net localgroup Administrators`  
 - **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
 💡 **Why it matters:** Enumerating local Administrators identifies high‑value accounts to target for impersonation/persistence.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "net"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+```
+<img width="867" height="343" alt="Screenshot 2025-08-17 215559" src="https://github.com/user-attachments/assets/99a871c3-c398-42dc-b375-91b7e41851bf" />
+
 
 ---
 
@@ -121,6 +130,14 @@ DeviceProcessEvents
 - **Timestamp:** ~2025-07-18T02:17:29Z  
 - **Process:** `"powershell.exe" qwinsta` → spawned **qwinsta.exe**  
 💡 **Why it matters:** Live session enumeration enables “ride‑along” with existing users to reduce new‑logon noise and increase stealth.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "qwinsta"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+```
+<img width="729" height="610" alt="Screenshot 2025-08-17 214913" src="https://github.com/user-attachments/assets/ddd32254-a7d9-4e9c-b4be-c854593f3378" />
 
 ---
 
@@ -134,6 +151,14 @@ DeviceProcessEvents
 - **CommandLine:** `Set-MpPreference -DisableRealtimeMonitoring $true`  
 - **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
 💡 **Why it matters:** Disables Defender’s real‑time protection to permit payload staging/credential theft with reduced detection.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "RealTimeMonitoring"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+```
+<img width="797" height="613" alt="Screenshot 2025-08-17 220314" src="https://github.com/user-attachments/assets/5aafbc90-ff20-4695-bc12-d6e5ae757ab4" />
 
 ---
 
@@ -147,6 +172,15 @@ DeviceProcessEvents
 - **RegistryKey:** `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`  
 - **RegistryValueName:** `DisableAntiSpyware` → **1**  
 💡 **Why it matters:** Weakens baseline protections at policy level; corroborates defense evasion.
+**KQL Query Used:**
+```
+DeviceRegistryEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where ActionType == "RegistryValueSet"
+| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, PreviousRegistryKey, PreviousRegistryValueData, PreviousRegistryValueName
+```
+<img width="868" height="792" alt="Screenshot 2025-08-17 220703" src="https://github.com/user-attachments/assets/3a95118b-7155-43a7-a5cb-2cbc0bd0a090" />
 
 ---
 
@@ -163,6 +197,16 @@ DeviceProcessEvents
 - **Initiating:** powershell.exe  
 - **SHA256:** `076592ca1957f8357cc201f0015072c612f5770ad7de85f87f254253c754dd7`  
 💡 **Why it matters:** comsvcs.dll MiniDump likely targeted LSASS; output masked as HR config to blend with business activity.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "Dump"
+| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+
+```
+<img width="879" height="567" alt="Screenshot 2025-08-17 221121" src="https://github.com/user-attachments/assets/1c15856c-3250-4f8d-ad99-5cc96f053f63" />
 
 ---
 
@@ -175,6 +219,15 @@ DeviceProcessEvents
 - **Process:** notepad.exe (initiated by powershell.exe)  
 - **SHA256:** `da5807bb0997ccb5132950ec87eda2b33b1ac4533cf17a22a6f3b576ed7c5b`  
 💡 **Why it matters:** Confirms post‑dump review/validation of harvested credentials or secrets.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "HRConfig.json"
+| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+```
+<img width="760" height="268" alt="Screenshot 2025-08-17 221257" src="https://github.com/user-attachments/assets/cd60c854-428b-4fde-aa35-a48941216c7e" />
 
 ---
 
@@ -185,6 +238,17 @@ DeviceProcessEvents
 - **Host:** nathan-iel-vm  
 - **Suspicious Domain:** `eo7j1sn715wkekj.m.pipedream.net` (amid mostly Microsoft `*.msedge.net`/`*.azureedge.net`)  
 💡 **Why it matters:** Non‑standard webhook/C2 infrastructure used as low‑profile beacon prior to exfiltration.
+**KQL Query Used:**
+```
+DeviceNetworkEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where RemoteUrl != ""
+| where RemoteUrl !contains ".com"
+| summarize Count = count() by RemoteUrl
+| sort by Count desc
+```
+<img width="498" height="575" alt="Screenshot 2025-08-17 221558" src="https://github.com/user-attachments/assets/ff3a81e7-bcd1-43fb-a85c-169e54aeb922" />
 
 ---
 
@@ -196,6 +260,17 @@ DeviceProcessEvents
 - **RemoteUrl:** `eo7j1sn715wkekj.m.pipedream.net`  
 - **Sequence:** 52.55.234.111 → **52.54.13.125** (last at 2025-07-18T15:28:44Z)  
 💡 **Why it matters:** Validates egress path to external service consistent with data staging/exfil.
+**KQL Query Used:**
+```
+DeviceNetworkEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where RemoteUrl !~ ""
+| where RemoteUrl contains "pipedream.net"
+| project Timestamp, DeviceName, ActionType, RemoteIP, RemoteUrl
+```
+<img width="492" height="411" alt="Screenshot 2025-08-17 221959" src="https://github.com/user-attachments/assets/3497fc89-96b0-4dff-955d-1ef4930d7e02" />
+
 
 ---
 
@@ -209,6 +284,15 @@ DeviceProcessEvents
 - **Value Name:** `HRToolTracker` → **C:\HRTools\LegacyAutomation\OnboardTracker.ps1**  
 - **Initiating Process:** PowerShell `New-ItemProperty ... -Force`  
 💡 **Why it matters:** Ensures re‑execution at logon; disguised as HR “Onboarding” tool.
+**KQL Query Used:**
+```
+DeviceRegistryEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where InitiatingProcessCommandLine contains "-c"
+| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessCommandLine
+```
+<img width="1643" height="231" alt="Screenshot 2025-08-17 222159" src="https://github.com/user-attachments/assets/2b76f134-956d-448c-8c57-c8c55a5bfc73" />
 
 ---
 
@@ -219,6 +303,17 @@ DeviceProcessEvents
 - **Host:** nathan-iel-vm  
 - **Repeated Access:** `Carlos.Tanaka-Evaluation.lnk` (count = 3) within HR artifacts list  
 💡 **Why it matters:** Personnel record of focus; aligns with promotion‑manipulation motive.
+**KQL Query Used:**
+```
+DeviceEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| summarize Count = count() by FileName
+| sort by Count desc
+```
+<img width="434" height="767" alt="Screenshot 2025-08-17 222304" src="https://github.com/user-attachments/assets/273f916d-e5fe-40dc-924f-802f9724ebc7" />
+
+
 
 ---
 
@@ -232,6 +327,28 @@ DeviceProcessEvents
 - **Path:** `C:\HRTools\PromotionCandidates.csv`  
 - **Initiating:** `"NOTEPAD.EXE" C:\HRTools\PromotionCandidates.csv`  
 💡 **Why it matters:** Confirms direct manipulation of structured HR data driving promotion decisions.
+**KQL Query Used:**
+```
+DeviceFileEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where FolderPath contains "HR"
+| summarize Count = count() by FileName
+| sort by Count desc
+
+```
+<img width="495" height="468" alt="Screenshot 2025-08-17 223219" src="https://github.com/user-attachments/assets/ce206008-93b6-48c1-a99c-2868db039031" />
+**KQL Query Used:**
+```
+DeviceFileEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where FileName == "PromotionCandidates.csv"
+| project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA1, InitiatingProcessCommandLine
+
+```
+<img width="1880" height="433" alt="Screenshot 2025-08-17 223349" src="https://github.com/user-attachments/assets/f31b2be7-75d2-4dac-b491-8006c9f342b4" />
+
 
 ---
 
@@ -244,6 +361,17 @@ DeviceProcessEvents
 - **Command:** `"wevtutil.exe" cl Security` (+ additional clears shortly after)  
 - **SHA256:** `0b732d9ad576d1400db44edf3e750849ac481e9bbaa628a3914e5eef9b7181b0`  
 💡 **Why it matters:** Clear Windows Event Logs → destroys historical telemetry; classic anti‑forensics.
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where ProcessCommandLine contains "wevtutil"
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+```
+<img width="1263" height="773" alt="Screenshot 2025-08-17 223624" src="https://github.com/user-attachments/assets/af5db852-e1c5-4ff3-8919-aef0a6baa225" />
+
+
 
 ---
 
@@ -255,6 +383,17 @@ DeviceProcessEvents
 - **Path:** `C:\Temp\EmptySysmonConfig.xml`  
 - **Host:** nathan-iel-vm · **Initiating:** powershell.exe  
 💡 **Why it matters:** Blinds Sysmon to suppress detection just prior to exit; ties off anti‑forensics chain.
+**KQL Query Used:**
+```
+DeviceFileEvents
+| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
+| where DeviceName contains "nathan-iel-vm"
+| where FileName in ("ConsoleHost_history.txt","EmptySysmonConfig.xml","HRConfig.json")
+| sort by Timestamp desc
+| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+```
+<img width="445" height="233" alt="Screenshot 2025-08-17 224226" src="https://github.com/user-attachments/assets/6334babb-6839-4281-b025-74346f5623e9" />
+
 
 ---
 
