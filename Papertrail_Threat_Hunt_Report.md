@@ -338,6 +338,7 @@ DeviceFileEvents
 
 ```
 <img width="495" height="468" alt="Screenshot 2025-08-17 223219" src="https://github.com/user-attachments/assets/ce206008-93b6-48c1-a99c-2868db039031" />
+
 **KQL Query Used:**
 ```
 DeviceFileEvents
