@@ -49,7 +49,7 @@ DeviceLogonEvents
 - **Why this matters:** Multiple failed attempts followed by a success confirms brute-force/spray attack.  
 - **Flag Answer:**
 
-<img width="865" height="208" alt="Screenshot 2025-09-22 202507" src="https://github.com/user-attachments/assets/20f21577-9105-45dc-83a5-0cea6c853a08" />
+ <img width="865" height="208" alt="Screenshot 2025-09-22 202507" src="https://github.com/user-attachments/assets/492a31a9-6104-4207-8425-4df95be9165a" />
 
 ```
 159.26.106.84
@@ -75,7 +75,7 @@ DeviceLogonEvents
 - **Why this matters:** Confirms the adversary gained access with `slflare`, pivot point for all subsequent activity.  
 - **Flag Answer:**
 
-<img width="1053" height="207" alt="Screenshot 2025-09-22 202959" src="https://github.com/user-attachments/assets/a0ba289e-b29d-4f3b-aec4-678a8fea6a4b" />
+<img width="1053" height="207" alt="Screenshot 2025-09-22 202959" src="https://github.com/user-attachments/assets/8e6e9cab-e474-4c2d-88c3-96cb5edbe112" />
 
 
 ```
@@ -102,7 +102,8 @@ DeviceFileEvents
 - **Why this matters:** Suspicious binary staged by attacker.  
 - **Flag Answer:**
 
-<img width="456" height="212" alt="Screenshot 2025-09-22 212246" src="https://github.com/user-attachments/assets/3cbeff1f-b154-4316-ac75-42a245d07a44" />
+<img width="456" height="212" alt="Screenshot 2025-09-22 212246" src="https://github.com/user-attachments/assets/6765052d-c87f-46a8-954f-622a1faed2d5" />
+
 
 
 ```
@@ -129,7 +130,8 @@ DeviceProcessEvents
 - **Why this matters:** Execution policy bypass indicates attacker intent to evade PowerShell restrictions.  
 - **Flag Answer:**
 
-<img width="763" height="236" alt="Screenshot 2025-09-22 212842" src="https://github.com/user-attachments/assets/7f2ff07f-9d04-43c5-abd7-8a578fffaf6a" />
+<img width="763" height="236" alt="Screenshot 2025-09-22 212842" src="https://github.com/user-attachments/assets/a7de38aa-9011-4c50-9a77-303fbdd65b0e" />
+
 
 
 ```
@@ -154,7 +156,8 @@ DeviceRegistryEvents
 - **Why this matters:** Scheduled tasks provide reliable persistence under SYSTEM context.  
 - **Flag Answer:**
 
-<img width="1441" height="635" alt="Screenshot 2025-09-22 214637" src="https://github.com/user-attachments/assets/90642385-877d-4d74-81c1-0cd1bfc71b1a" />
+
+<img width="1441" height="635" alt="Screenshot 2025-09-22 214637" src="https://github.com/user-attachments/assets/7e36b755-4010-47f9-9147-22d0ee11ff86" />
 
 
 ```
@@ -183,7 +186,7 @@ This is a deliberate defense-evasion step (MITRE T1562.001) that increases attac
 Because the change is made in the registry, it may persist across reboots and survive simple remediation unless explicitly removed.
 - **Flag Answer:**
 
-<img width="802" height="170" alt="Screenshot 2025-09-22 214954" src="https://github.com/user-attachments/assets/141586e9-a5cc-4125-b095-089791424ea2" />
+<img width="802" height="170" alt="Screenshot 2025-09-22 214954" src="https://github.com/user-attachments/assets/b7eb1e1e-5c25-489e-89f2-26f7e34c11d1" />
 
 
 ```
@@ -211,7 +214,8 @@ Because it’s executed immediately after RDP access/payload execution, it ancho
 This command helps explain later choices (where to stage data, whether to attempt credential theft, etc.).
 - **Flag Answer:**
 
-<img width="420" height="174" alt="Screenshot 2025-09-22 215157" src="https://github.com/user-attachments/assets/3335ea6a-1d46-45c1-964b-a70c6877cf82" />
+<img width="420" height="174" alt="Screenshot 2025-09-22 215157" src="https://github.com/user-attachments/assets/a066a34e-49c3-45b4-9dcb-5925c3e27553" />
+
 
 
 ```
@@ -238,7 +242,8 @@ The presence of backup_sync.zip in user-space and created by the compromised acc
 The archive filename and timing allow us to correlate subsequent network activity (beacon/C2 and exfil attempts) to confirm when data staging completed and when exfil likely began.  
 - **Flag Answer:**
 
-<img width="896" height="94" alt="Screenshot 2025-09-22 215423" src="https://github.com/user-attachments/assets/c500a234-a81a-4fb4-b9ca-5353228bb2a1" />
+<img width="896" height="94" alt="Screenshot 2025-09-22 215423" src="https://github.com/user-attachments/assets/4a22a995-04cd-46a7-bcad-7c79e12b9a4d" />
+
 
 
 ```
@@ -263,7 +268,8 @@ DeviceNetworkEvents
 The outbound attempt from the compromised host to 185.92.220.87 (port 80) coincides with the timeline after the payload executed and archive staging — strongly indicating C2 beaconing or ingress-tool transfer (MITRE T1071.001 / T1105).
 - **Flag Answer:**
 
-<img width="434" height="206" alt="Screenshot 2025-09-22 220008" src="https://github.com/user-attachments/assets/1d618919-5311-415c-876e-e0a63d55f09c" />
+
+<img width="434" height="206" alt="Screenshot 2025-09-22 220008" src="https://github.com/user-attachments/assets/ba791d54-d8f4-4af6-8f29-38ac7088a0c7" />
 
 
 ```
@@ -295,7 +301,8 @@ This is a textbook case of T1048.003 — Exfiltration Over Unencrypted Protocol,
 Strong correlation with Flags 8 (archive staging) and 9 (C2 IP) confirms consolidated infrastructure and full kill-chain progression.
 - **Flag Answer:**
 
-<img width="965" height="209" alt="Screenshot 2025-09-22 220311" src="https://github.com/user-attachments/assets/1833ec13-baed-4be0-a8bb-a9fc262d5569" />
+<img width="965" height="209" alt="Screenshot 2025-09-22 220311" src="https://github.com/user-attachments/assets/5d9c5e01-7894-4130-b5c1-03a4356650c0" />
+
 
 
 ```
