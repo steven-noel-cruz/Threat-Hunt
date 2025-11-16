@@ -206,3 +206,60 @@ Recognizing planted artifacts helps distinguish actual tampering from intentiona
 ``` DefenderTamperArtifact.lnk ```
 
 ---
+
+## Flag 4 – Quick Data Probe (Clipboard Access)
+
+### Objective
+Identify short-lived actions that attempt to gather easily accessible, high-value data such as clipboard contents. These probes often occur early in an intrusion as attackers look for credentials, tokens, or other sensitive information requiring minimal effort to obtain.
+
+### Finding
+The actor executed a PowerShell command designed to silently read the clipboard. This was a brief, opportunistic action consistent with early-stage reconnaissance and “quick win” data collection.
+
+### Evidence
+The following command was executed on **gab-intern-vm**:
+
+<img width="758" height="257" alt="Screenshot 2025-11-16 091417" src="https://github.com/user-attachments/assets/54f5b26b-941f-4509-b404-7a2f406cdbb7" />
+
+
+- The command suppresses errors and returns no output, indicating covert intent.
+- The use of `-NoProfile` and `-Sta` reduces detection opportunities.
+- Clipboard access is a known tradecraft method for capturing credentials copied during authentication.
+
+### Query Used
+```
+let T0 = datetime(2025-10-01);
+let T1 = datetime(2025-10-15);
+DeviceProcessEvents
+| where DeviceName == @"gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| order by TimeGenerated asc
+| project TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+| where ProcessCommandLine contains "clip"
+```
+### Why This Matters
+
+Clipboard data frequently contains:
+
+- Passwords
+
+- MFA codes
+
+- SSO tokens
+
+- PII and sensitive business data
+
+Attackers routinely check the clipboard early because:
+
+- It is low-effort
+
+- It avoids writing files
+
+- It requires no elevated privileges
+
+- It can reveal immediate value without deeper exploration
+
+Detecting clipboard access helps identify early insight-gathering behaviors that precede more intrusive operations.
+
+### Flag Answer
+
+``` powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }" ```
