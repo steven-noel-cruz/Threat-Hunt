@@ -362,3 +362,59 @@ This behavior strongly aligns with pre-exfiltration reconnaissance and is common
 <img width="592" height="313" alt="Screenshot 2025-11-16 092123" src="https://github.com/user-attachments/assets/95985208-1cc7-41fd-8b52-cfbc739e6d3a" />
 
 ``` "cmd.exe" /c wmic logicaldisk get name,freespace,size" ```
+
+---
+
+## Flag 7 – Connectivity & Name Resolution Check
+
+### Objective
+Identify activity that verifies the system’s ability to resolve domain names and communicate with external hosts. Attackers commonly perform lightweight connectivity tests before attempting data exfiltration or command-and-control communication.
+
+### Finding
+Outbound network activity originated from a process whose parent was **RuntimeBroker.exe**, indicating that the execution chain leveraged a user-context process often associated with application mediation. The initiating parent process identified was:
+
+**RuntimeBroker.exe**
+
+### Evidence
+- Outbound requests to HTTP port 80 were observed.
+- Requests included known connectivity test domains (`msftconnecttest.com`), indicating resolution and egress validation.
+- The parent process recorded for the suspicious PowerShell-driven outbound check was `RuntimeBroker.exe`.
+- This aligns with the actor testing network availability before staging and exfiltration.
+
+### Query Used
+```
+let T0 = datetime(2025-10-01);
+let T1 = datetime(2025-10-15);
+DeviceNetworkEvents
+| where DeviceName =~ "gab-intern-vm" 
+| where TimeGenerated between (T0 .. T1)
+| where RemotePort == "80"
+| where RemoteUrl != ""
+| where InitiatingProcessAccountName == "g4bri3lintern"
+| project TimeGenerated, RemotePort, RemoteUrl, DeviceName, 
+          InitiatingProcessFileName, InitiatingProcessCommandLine,
+          InitiatingProcessParentFileName
+```
+
+### Why This Matters
+
+Connectivity checks commonly precede:
+
+-Exfiltration attempts
+
+-Command-and-control communication
+
+-Remote payload staging
+
+-Beaconing behavior
+
+The use of RuntimeBroker.exe in the parent chain helps attackers blend into legitimate application workflows and reduces detection visibility.
+
+### Flag Answer
+<img width="556" height="443" alt="Screenshot 2025-11-16 094448" src="https://github.com/user-attachments/assets/54f8383c-b822-4cf6-895a-f6a34df755c7" />
+
+
+``` RuntimeBroker.exe ```
+
+---
+
