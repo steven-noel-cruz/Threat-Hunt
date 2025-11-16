@@ -263,3 +263,61 @@ Detecting clipboard access helps identify early insight-gathering behaviors that
 ### Flag Answer
 
 ``` powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }" ```
+
+---
+
+## Flag 5 – Host Context Recon (Session Enumeration)
+
+### Objective
+Identify reconnaissance activity that gathers basic host and user context—specifically attempts to determine which sessions are active on the system. Attackers often use session enumeration to assess whether a user is present, whether the machine is safe to operate on, and whether privilege escalation opportunities are tied to active sessions.
+
+### Finding
+The actor executed **qwinsta**, a command used to list active terminal sessions. This provided the attacker with details about logged-in accounts, session states, and potential interactive users.
+
+The **last** recon attempt occurred at:
+
+**2025-10-09T12:51:44.3425653Z**
+
+### Evidence
+- `qwinsta.exe` was executed from **gab-intern-vm** within the intrusion window.
+- This command enumerates:
+  - Session IDs  
+  - Username  
+  - Session state (active/disconnected)  
+  - Session type (console/RDP)  
+- Execution aligned directly after clipboard probing and before privilege enumeration, matching a typical recon flow.
+
+<img width="456" height="110" alt="Screenshot 2025-11-16 091741" src="https://github.com/user-attachments/assets/1724fb41-9ca7-41d2-aa30-875d23659b1c" />
+
+
+### Query Used
+```
+let T0 = datetime(2025-10-01);
+let T1 = datetime(2025-10-30);
+DeviceProcessEvents
+| where DeviceName == @"gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| where ProcessCommandLine contains "qwi"
+| order by TimeGenerated asc
+| project TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+```
+### Why This Matters
+
+Session enumeration is a reliable early indicator of malicious reconnaissance. It supports attacker objectives such as:
+
+- Identifying if the user is currently active
+
+- Determining the safety window for further operations
+
+- Confirming remote session availability
+
+- Planning persistence or lateral movement steps based on active user context
+
+When combined with clipboard probing and privilege checks, this forms a complete reconnaissance triad.
+
+Flag Answer
+
+``` 2025-10-09T12:51:44.3425653Z ```
+
+---
+
