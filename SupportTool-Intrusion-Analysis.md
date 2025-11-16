@@ -57,7 +57,7 @@ The observed pattern aligns with an adversary leveraging support-themed nomencla
 
 # Flag-by-Flag Findings
 
-## Flag 1 – Starting Point Identification
+## Flag 0 – Starting Point Identification
 
 ### Objective
 Determine which machine should be the primary focus of the threat hunt based on early indicators, file naming patterns, and activity observed in the first half of October. The goal is to identify the endpoint most likely associated with the initial execution of suspicious support-themed tooling.
@@ -103,3 +103,106 @@ Choosing the wrong starting system leads to incomplete or misleading analysis, s
 
 ### Flag Answer
 ``` gab-intern-vm ```
+
+---
+## Flag 1 – Earliest Anomalous Execution (Execution Policy Parameter)
+
+### Objective
+Identify the earliest unusual execution event that could represent the initial entry point of the intrusion. The focus is on detecting atypical script execution behavior originating from untrusted paths, particularly the user’s Downloads directory.
+
+### Finding
+The earliest suspicious execution occurred when the user on **gab-intern-vm** launched `SupportTool.ps1` using PowerShell with the **`-ExecutionPolicy`** parameter.  
+This parameter was the **first CLI switch** observed in the malicious command line.
+
+### Evidence
+- The script `SupportTool.ps1` was executed directly from the **Downloads** directory.  
+- The command line included the parameter:  
+- This is consistent with attempts to run unsigned or untrusted scripts without policy restrictions.
+- The timestamp places this as the first anomalous execution within the investigation window.
+
+<img width="772" height="138" alt="Screenshot 2025-11-16 090638" src="https://github.com/user-attachments/assets/79879602-da87-4cf2-be00-dc49ef8e58db" />
+
+
+### Query Used
+```
+let T0 = datetime(2025-10-01);
+let T1 = datetime(2025-10-15);
+DeviceProcessEvents
+| where DeviceName == @"gab-intern-vm"
+| where ProcessCommandLine contains "SupportTool.ps1"
+| where TimeGenerated between (T0 .. T1)
+| extend FirstSwitch = extract(@"[\/\-]([A-Za-z0-9_\-]+)", 1, ProcessCommandLine)
+| project TimeGenerated, DeviceName, FileName, ProcessCommandLine, FirstSwitch
+| order by TimeGenerated asc
+```
+
+### Why This Matters
+
+Execution policy bypasses are common in:
+
+- Initial access
+
+- Script-based payload delivery
+
+- Living-off-the-land tradecraft
+
+- Reducing PowerShell’s built-in security friction
+
+- Identifying the first CLI parameter used allows analysts to:
+
+- Anchor the attack timeline
+
+- Validate the method of execution
+
+- Confirm that the script was intentionally allowed to circumvent security controls
+
+This flag represents the initial foothold in the attack sequence.
+
+``` -ExecutionPolicy ```
+
+---
+
+## Flag 2 – Defense Disabling (Simulated Tamper Indicator)
+
+### Objective
+Identify any artifacts or events that suggest the actor attempted to imply, simulate, or stage security posture changes—specifically actions that appear to disable or tamper with security controls without actually modifying them.
+
+### Finding
+A suspicious shortcut file named **DefenderTamperArtifact.lnk** was discovered on **gab-intern-vm**.  
+This file was **manually accessed via Explorer.exe**, indicating that the actor intentionally opened it.  
+No real Defender configuration changes occurred; the file served as a planted decoy.
+
+### Evidence
+- `DefenderTamperArtifact.lnk` was created and accessed during the intrusion window.  
+- The shortcut’s naming convention implies Defender tamper actions, but:
+  - No changes were logged in Defender configuration or registry keys.
+  - No corresponding tampering commands (e.g., `Set-MpPreference`) were executed.
+- Access via **Explorer.exe** supports that the file was intentionally opened, likely to reinforce the deception narrative.
+
+<img width="585" height="442" alt="Screenshot 2025-11-16 091038" src="https://github.com/user-attachments/assets/92120389-5588-4db0-af84-3f2579179b9d" />
+
+
+### Query Used
+```
+let T0 = datetime(2025-10-01);
+let T1 = datetime(2025-10-30);
+DeviceFileEvents
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| project TimeGenerated, FileName, InitiatingProcessCommandLine
+| where InitiatingProcessCommandLine == "Explorer.EXE"
+```
+
+### Why This Matters
+
+Staged artifacts like fake tamper files are common in intrusion playbooks designed to:
+- Distract analysts
+- Inflate the perceived scope of compromise
+- Justify other suspicious activity as “troubleshooting”
+- Create a false trail that implies IT or support involvement
+Recognizing planted artifacts helps distinguish actual tampering from intentional misdirection, improving investigative accuracy.
+
+### Flag Answer
+``` DefenderTamperArtifact.lnk ```
+
+---
