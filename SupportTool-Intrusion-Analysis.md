@@ -99,7 +99,9 @@ It establishes:
 Choosing the wrong starting system leads to incomplete or misleading analysis, so Flag 1 acts as the anchor for the full investigation.
 
 ### Flag Answer
+
 <img width="605" height="146" alt="Screenshot 2025-11-16 090251" src="https://github.com/user-attachments/assets/dafd4bac-bfff-4102-8011-e9ce68f942e1" />
+
 ``` gab-intern-vm ```
 
 ---
@@ -152,7 +154,9 @@ Execution policy bypasses are common in:
 - Confirm that the script was intentionally allowed to circumvent security controls
 
 This flag represents the initial foothold in the attack sequence.
+### Flag Answer
 <img width="772" height="138" alt="Screenshot 2025-11-16 090638" src="https://github.com/user-attachments/assets/79879602-da87-4cf2-be00-dc49ef8e58db" />
+
 ``` -ExecutionPolicy ```
 
 ---
@@ -197,6 +201,7 @@ Recognizing planted artifacts helps distinguish actual tampering from intentiona
 
 ### Flag Answer
 <img width="585" height="442" alt="Screenshot 2025-11-16 091038" src="https://github.com/user-attachments/assets/92120389-5588-4db0-af84-3f2579179b9d" />
+
 ``` DefenderTamperArtifact.lnk ```
 
 ---
@@ -253,6 +258,7 @@ Detecting clipboard access helps identify early insight-gathering behaviors that
 
 ### Flag Answer
 <img width="758" height="257" alt="Screenshot 2025-11-16 091417" src="https://github.com/user-attachments/assets/54f5b26b-941f-4509-b404-7a2f406cdbb7" />
+
 ``` powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }" ```
 
 ---
@@ -305,23 +311,24 @@ When combined with clipboard probing and privilege checks, this forms a complete
 
 Flag Answer
 <img width="456" height="110" alt="Screenshot 2025-11-16 091741" src="https://github.com/user-attachments/assets/1724fb41-9ca7-41d2-aa30-875d23659b1c" />
+
 ``` 2025-10-09T12:51:44.3425653Z ```
 
 ---
 
-# Flag 6 – Storage Surface Mapping (Logical Disk Enumeration)
+## Flag 6 – Storage Surface Mapping (Logical Disk Enumeration)
 
-## Objective
+### Objective
 Detect reconnaissance activity that enumerates local storage devices, available free space, and mounted volumes. Attackers perform this step to understand where data can be stored, staged, or exfiltrated from.
 
-## Finding
+### Finding
 The actor executed a WMIC command to enumerate logical disks and their free space. This represents a deliberate check of storage surfaces, often performed before staging artifacts or preparing exfiltration bundles.
 
 The second command tied to this activity was:
 
 **`"cmd.exe" /c wmic logicaldisk get name,freespace,size"`**
 
-## Evidence
+### Evidence
 - Command enumerated all logical drives (C:, D:, network shares, removable media).
 - Output reveals available free space, which attackers use to determine:
   - Where to write temp files
@@ -329,7 +336,7 @@ The second command tied to this activity was:
   - Whether the disk has enough room for staged artifacts
 - This action occurred shortly before ZIP bundle creation (`ReconArtifacts.zip`).
 
-## Query Used
+### Query Used
 ```
 DeviceProcessEvents
 | where ProcessCommandLine contains "wmic"
@@ -339,7 +346,7 @@ DeviceProcessEvents
 | order by TimeGenerated asc
 ```
 
-## Why This Matters
+### Why This Matters
 
 Storage enumeration is a common discovery technique used to:
 
@@ -351,6 +358,7 @@ Storage enumeration is a common discovery technique used to:
 
 This behavior strongly aligns with pre-exfiltration reconnaissance and is commonly observed in hands-on intrusion workflows.
 
-## Flag Answer
+### Flag Answer
 <img width="592" height="313" alt="Screenshot 2025-11-16 092123" src="https://github.com/user-attachments/assets/95985208-1cc7-41fd-8b52-cfbc739e6d3a" />
+
 ``` "cmd.exe" /c wmic logicaldisk get name,freespace,size" ```
