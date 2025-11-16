@@ -75,9 +75,6 @@ Within the date window of October 1–15, 2025, only **gab-intern-vm** recorded:
 - Multiple process executions originating from this file  
 - Matches to keyword indicators: *support*, *tool*, *help*, *desk*  
 
-<img width="605" height="146" alt="Screenshot 2025-11-16 090251" src="https://github.com/user-attachments/assets/dafd4bac-bfff-4102-8011-e9ce68f942e1" />
-
-
 The distribution of hosts in the dataset indicated this system was the earliest and most consistently associated with suspicious file execution.
 
 ### Query Used
@@ -102,6 +99,7 @@ It establishes:
 Choosing the wrong starting system leads to incomplete or misleading analysis, so Flag 1 acts as the anchor for the full investigation.
 
 ### Flag Answer
+<img width="605" height="146" alt="Screenshot 2025-11-16 090251" src="https://github.com/user-attachments/assets/dafd4bac-bfff-4102-8011-e9ce68f942e1" />
 ``` gab-intern-vm ```
 
 ---
@@ -119,9 +117,6 @@ This parameter was the **first CLI switch** observed in the malicious command li
 - The command line included the parameter:  
 - This is consistent with attempts to run unsigned or untrusted scripts without policy restrictions.
 - The timestamp places this as the first anomalous execution within the investigation window.
-
-<img width="772" height="138" alt="Screenshot 2025-11-16 090638" src="https://github.com/user-attachments/assets/79879602-da87-4cf2-be00-dc49ef8e58db" />
-
 
 ### Query Used
 ```
@@ -157,7 +152,7 @@ Execution policy bypasses are common in:
 - Confirm that the script was intentionally allowed to circumvent security controls
 
 This flag represents the initial foothold in the attack sequence.
-
+<img width="772" height="138" alt="Screenshot 2025-11-16 090638" src="https://github.com/user-attachments/assets/79879602-da87-4cf2-be00-dc49ef8e58db" />
 ``` -ExecutionPolicy ```
 
 ---
@@ -178,8 +173,6 @@ No real Defender configuration changes occurred; the file served as a planted de
   - No changes were logged in Defender configuration or registry keys.
   - No corresponding tampering commands (e.g., `Set-MpPreference`) were executed.
 - Access via **Explorer.exe** supports that the file was intentionally opened, likely to reinforce the deception narrative.
-
-<img width="585" height="442" alt="Screenshot 2025-11-16 091038" src="https://github.com/user-attachments/assets/92120389-5588-4db0-af84-3f2579179b9d" />
 
 
 ### Query Used
@@ -203,6 +196,7 @@ Staged artifacts like fake tamper files are common in intrusion playbooks design
 Recognizing planted artifacts helps distinguish actual tampering from intentional misdirection, improving investigative accuracy.
 
 ### Flag Answer
+<img width="585" height="442" alt="Screenshot 2025-11-16 091038" src="https://github.com/user-attachments/assets/92120389-5588-4db0-af84-3f2579179b9d" />
 ``` DefenderTamperArtifact.lnk ```
 
 ---
@@ -217,9 +211,6 @@ The actor executed a PowerShell command designed to silently read the clipboard.
 
 ### Evidence
 The following command was executed on **gab-intern-vm**:
-
-<img width="758" height="257" alt="Screenshot 2025-11-16 091417" src="https://github.com/user-attachments/assets/54f5b26b-941f-4509-b404-7a2f406cdbb7" />
-
 
 - The command suppresses errors and returns no output, indicating covert intent.
 - The use of `-NoProfile` and `-Sta` reduces detection opportunities.
@@ -261,7 +252,7 @@ Attackers routinely check the clipboard early because:
 Detecting clipboard access helps identify early insight-gathering behaviors that precede more intrusive operations.
 
 ### Flag Answer
-
+<img width="758" height="257" alt="Screenshot 2025-11-16 091417" src="https://github.com/user-attachments/assets/54f5b26b-941f-4509-b404-7a2f406cdbb7" />
 ``` powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }" ```
 
 ---
@@ -286,9 +277,6 @@ The **last** recon attempt occurred at:
   - Session state (active/disconnected)  
   - Session type (console/RDP)  
 - Execution aligned directly after clipboard probing and before privilege enumeration, matching a typical recon flow.
-
-<img width="456" height="110" alt="Screenshot 2025-11-16 091741" src="https://github.com/user-attachments/assets/1724fb41-9ca7-41d2-aa30-875d23659b1c" />
-
 
 ### Query Used
 ```
@@ -316,8 +304,53 @@ Session enumeration is a reliable early indicator of malicious reconnaissance. I
 When combined with clipboard probing and privilege checks, this forms a complete reconnaissance triad.
 
 Flag Answer
-
+<img width="456" height="110" alt="Screenshot 2025-11-16 091741" src="https://github.com/user-attachments/assets/1724fb41-9ca7-41d2-aa30-875d23659b1c" />
 ``` 2025-10-09T12:51:44.3425653Z ```
 
 ---
 
+# Flag 6 – Storage Surface Mapping (Logical Disk Enumeration)
+
+## Objective
+Detect reconnaissance activity that enumerates local storage devices, available free space, and mounted volumes. Attackers perform this step to understand where data can be stored, staged, or exfiltrated from.
+
+## Finding
+The actor executed a WMIC command to enumerate logical disks and their free space. This represents a deliberate check of storage surfaces, often performed before staging artifacts or preparing exfiltration bundles.
+
+The second command tied to this activity was:
+
+**`"cmd.exe" /c wmic logicaldisk get name,freespace,size"`**
+
+## Evidence
+- Command enumerated all logical drives (C:, D:, network shares, removable media).
+- Output reveals available free space, which attackers use to determine:
+  - Where to write temp files
+  - Where to place ZIP archives
+  - Whether the disk has enough room for staged artifacts
+- This action occurred shortly before ZIP bundle creation (`ReconArtifacts.zip`).
+
+## Query Used
+```
+DeviceProcessEvents
+| where ProcessCommandLine contains "wmic"
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-01) .. datetime(2025-10-30))
+| project TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine, AccountName
+| order by TimeGenerated asc
+```
+
+## Why This Matters
+
+Storage enumeration is a common discovery technique used to:
+
+- Identify writable locations (Public folders, user profiles)
+
+- Select staging directories for exfiltration
+
+- Assess constraints for large file creation or compression tasks
+
+This behavior strongly aligns with pre-exfiltration reconnaissance and is commonly observed in hands-on intrusion workflows.
+
+## Flag Answer
+<img width="592" height="313" alt="Screenshot 2025-11-16 092123" src="https://github.com/user-attachments/assets/95985208-1cc7-41fd-8b52-cfbc739e6d3a" />
+``` "cmd.exe" /c wmic logicaldisk get name,freespace,size" ```
