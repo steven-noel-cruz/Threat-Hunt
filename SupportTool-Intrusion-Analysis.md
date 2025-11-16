@@ -418,3 +418,110 @@ The use of RuntimeBroker.exe in the parent chain helps attackers blend into legi
 
 ---
 
+## Flag 8 – Interactive Session Discovery (Initiating Process Unique ID)
+
+### Objective
+Identify activity used to determine whether interactive or active user sessions are present on the system. Attackers perform this check to understand whether the endpoint is currently in use, which influences timing and stealth for subsequent actions.
+
+### Finding
+Session enumeration commands such as `query user`, `query session`, `qwinsta`, and `quser` were executed on **gab-intern-vm**.  
+The **unique ID of the initiating process chain** responsible for this activity was:
+
+**2533274790397065**
+
+### Evidence
+- Multiple session discovery commands were observed within the intrusion window.
+- These commands list current sessions, their states (Active/Disc), and session types.
+- The process chain for these recon commands led back to a single initiating process, uniquely identified by the `InitiatingProcessUniqueId` field.
+- This recon activity occurred shortly before privilege enumeration and storage mapping, matching known attacker workflow patterns.
+
+### Query Used
+```
+let T0 = datetime(2025-10-09);
+let T1 = datetime(2025-10-15);
+let needles = dynamic(["query user","quser","query session","qwinsta","session","whoami /all","tasklist"]);
+DeviceProcessEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| where ProcessCommandLine has_any (needles)
+| project
+    TimeGenerated,
+    DeviceName,
+    ProcessCommandLine,
+    InitiatingProcessUniqueId,
+    InitiatingProcessCommandLine,
+    InitiatingProcessFileName
+| order by TimeGenerated asc
+```
+### Why This Matters
+
+Session enumeration is a high-value signal of interactive intrusion because it enables attackers to:
+
+-Detect whether a human is currently active on the device
+
+-Avoid performing noisy actions during active usage
+
+-Determine whether elevated sessions are present
+
+-Tailor persistence mechanisms to the user’s login patterns
+
+Tracking the initiating process ID helps correlate this behavior to later persistence and data staging events.
+
+### Flag Answer
+<img width="1204" height="341" alt="Screenshot 2025-11-16 095223" src="https://github.com/user-attachments/assets/b2a327f2-6c34-45ab-91dd-1ef2fd010eca" />
+
+```2533274790397065```
+
+---
+## Flag 9 – Runtime Application Inventory (Process Enumeration)
+
+### Objective
+Identify activity that enumerates running processes or services on the host. Attackers commonly perform this step to understand what security tools are active, what applications are running, and whether any obstacles exist for further operations.
+
+### Finding
+The actor executed **`tasklist.exe`**, a Windows-native utility used to enumerate all running processes. This activity occurred after privilege and session reconnaissance, consistent with an attacker building situational awareness on the host.
+
+The process that best demonstrated runtime process enumeration was:
+
+**tasklist.exe**
+
+### Evidence
+- `tasklist.exe` was observed on **gab-intern-vm** during the intrusion window.
+- This command provides a full list of running processes, their PIDs, memory usage, and service associations.
+- The command execution closely followed session and privilege enumeration, further validating an intentional reconnaissance phase.
+
+### Query Used
+```kql
+let T0 = datetime(2025-10-09);
+let T1 = datetime(2025-10-15);
+let needles = dynamic(["query user","quser","query session","qwinsta","session","whoami /all","tasklist"]);
+DeviceProcessEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| where ProcessCommandLine has_any (needles)
+| project TimeGenerated, DeviceName, ProcessCommandLine,
+          InitiatingProcessUniqueId, InitiatingProcessCommandLine,
+          InitiatingProcessFileName, ProcessVersionInfoFileDescription
+| order by TimeGenerated asc
+```
+### Why This Matters
+
+Process enumeration is commonly used to:
+
+-Identify active security tools
+
+-Detect monitoring agents
+
+-Confirm whether defensive processes can be bypassed
+
+-Map high-value processes related to credentials or sensitive data
+
+-Prepare for persistence, injection, or exploitation
+
+In this scenario, the process inventory aligns with the actor’s methodical reconnaissance flow.
+
+### Flag Answer
+
+<img width="588" height="258" alt="image" src="https://github.com/user-attachments/assets/45e46f46-377f-49e6-92a7-e0a1dd328454" />
+
+tasklist.exe
