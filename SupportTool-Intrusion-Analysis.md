@@ -567,13 +567,13 @@ DeviceProcessEvents
 
 Privilege enumeration is a strong indicator of malicious intent because it:
 
-Helps attackers determine what access they currently have
+- Helps attackers determine what access they currently have
 
-Identifies token privileges (SeDebugPrivilege, SeBackupPrivilege, etc.)
+- Identifies token privileges (SeDebugPrivilege, SeBackupPrivilege, etc.)
 
-Reveals whether the user belongs to administrative or delegated groups
+- Reveals whether the user belongs to administrative or delegated groups
 
-Guides next steps such as persistence, credential access, or lateral movement
+- Guides next steps such as persistence, credential access, or lateral movement
 
 The timing of this event—immediately after session recon—aligns with typical attacker workflow.
 
@@ -586,9 +586,603 @@ The timing of this event—immediately after session recon—aligns with typical
 
 ---
 
+## Flag 11 – Proof of Access & Egress Validation (First Outbound Destination)
+
+### Objective
+Identify network activity that demonstrates both the ability to reach external destinations and the intent to validate outbound communication pathways. Attackers frequently perform lightweight outbound checks before attempting exfiltration or command-and-control communication.
+
+### Finding
+The first outbound network destination contacted during the intrusion window was:
+
+**www.msftconnecttest.com**
+
+This domain is commonly used by Windows to validate internet connectivity, making it an ideal covert method for attackers to blend egress checks with benign-looking traffic.
+
+### Evidence
+- Outbound HTTP traffic to `www.msftconnecttest.com` was observed immediately after reconnaissance and system mapping.
+- The activity originated from user-context PowerShell execution.
+- No other suspicious outbound connections preceded this one.
+- The timing aligns with typical pre-exfiltration validation behavior.
+
+### Query Used
+```
+DeviceNetworkEvents
+| where DeviceName =~ "gab-intern-vm"
+| where InitiatingProcessCommandLine !contains "exfiltrate"
+| where InitiatingProcessCommandLine !contains "portscan"
+| where InitiatingProcessCommandLine !contains "crypt"
+| where InitiatingProcessCommandLine !contains "eicar"
+| where TimeGenerated between (datetime(2025-10-09) .. datetime(2025-10-10))
+| where InitiatingProcessFileName in~ ("powershell.exe","cmd.exe")
+| project TimeGenerated, RemoteUrl, RemoteIP, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by TimeGenerated asc
+```
+
+### Why This Matters
+
+Outbound connectivity checks:
+
+- Confirm the host can reach the internet
+
+- Validate whether HTTP/HTTPS egress is permitted
+
+- Allow attackers to test resolution and routing without raising suspicion
+
+- Precede exfiltration attempts and C2 beacons
+
+- Help the attacker map which ports, domains, and protocols are allowed out of the network
+
+Using a legitimate Windows connectivity-test domain helps attackers avoid triggering alerts.
+
+### Flag Answer
+
+<img width="942" height="286" alt="Screenshot 2025-11-16 100522" src="https://github.com/user-attachments/assets/1e2b365f-2c4a-4150-bd15-725b20f45910" />
 
 
+``` www.msftconnecttest.com ```
+
+---
+
+## Flag 12 – Artifact Staging (Recon Data Bundled)
+
+### Objective
+Identify actions that consolidate reconnaissance outputs or collected artifacts into a single location or compressed package. This typically occurs immediately before an exfiltration attempt.
+
+### Finding
+The actor created a ZIP archive named **ReconArtifacts.zip** in the **Public** user directory.  
+This file represents the staging of collected data in preparation for transfer.
+
+The full path of the staged artifact was:
+
+**C:\Users\Public\ReconArtifacts.zip**
+
+### Evidence
+- A `.zip` file was created within the intrusion window.
+- The archive was written to a globally accessible directory (`C:\Users\Public`), suggesting the attacker wanted:
+  - predictable write access  
+  - broad permissions  
+  - a location unlikely to be monitored by the user  
+- This activity directly preceded an attempted outbound connection to an external IP address.
+
+### Query Used
+```
+DeviceFileEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-09) .. datetime(2025-10-10))
+| where FileName contains "zip"
+| where InitiatingProcessAccountDomain == "gab-intern-vm"
+| project TimeGenerated, DeviceName, ActionType, InitiatingProcessAccountName, FileName, FolderPath
+```
+### Why This Matters
+
+Staging is a critical indicator of malicious behavior because it:
+
+- Shows clear preparation for data exfiltration
+
+- Represents deliberate collection and packaging of reconnaissance data
+
+- Often serves as the final step before an upload attempt
+
+- Provides strong evidence of intent even if the exfiltration fails
+
+ZIP-based staging is a common tradecraft technique for both threat actors and red teams.
+
+### Flag Answer
+
+<img width="1523" height="187" alt="Screenshot 2025-11-16 100825" src="https://github.com/user-attachments/assets/f8d29e43-0b9d-4a18-a1bc-369fe742d328" />
 
 
+```C:\Users\Public\ReconArtifacts.zip```
+
+---
+
+## Flag 13 – Outbound Transfer Attempt (Simulated Exfiltration)
+
+### Objective
+Identify any network activity indicating an attempt to move staged data off the host. Even if the upload fails, outbound transfer attempts demonstrate malicious intent and confirm that the actor is testing or actively using egress channels.
+
+### Finding
+The actor attempted an outbound connection to the external IP:
+
+**100.29.147.161**
+
+This connection occurred shortly after the creation of the `ReconArtifacts.zip` staging file, indicating a simulated or attempted exfiltration step.
+
+### Evidence
+- Network telemetry shows an outbound HTTP request from **gab-intern-vm** to `100.29.147.161`.
+- The initiating process was a PowerShell execution under the user `g4bri3lintern`.
+- No successful file upload was confirmed, but the attempt itself demonstrates intent to exfiltrate.
+- The timing aligns directly after the ZIP bundling activity, forming a complete exfil attempt chain.
+
+### Query Used
+```
+DeviceNetworkEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-09) .. datetime(2025-10-10))
+| where InitiatingProcessCommandLine == "\"powershell.exe\" "
+| where InitiatingProcessAccountName == "g4bri3lintern"
+| project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, RemotePort, InitiatingProcessCommandLine
+```
+
+### Why This Matters
+
+Outbound transfer attempts are critical indicators because they:
+
+- Reveal the adversary’s intention to remove data from the environment
+
+- Validate the attacker’s reconnaissance and staging phases
+
+- Identify which external services or IPs are being used as exfil endpoints
+
+- Provide valuable indicators for network containment and monitoring
+
+- Demonstrate the ability to perform outbound communication despite security controls
+
+Even a failed exfil attempt confirms the actor reached the final stages of a typical intrusion workflow.
+
+### Flag Answer
+
+<img width="1203" height="132" alt="Screenshot 2025-11-16 102855" src="https://github.com/user-attachments/assets/23c3c927-f934-43e0-87a8-3451a0e70005" />
+
+
+``` 100.29.147.161 ``` 
+
+---
+
+## Flag 14 – Scheduled Re-Execution Persistence (Scheduled Task Creation)
+
+### Objective
+Identify mechanisms that ensure the attacker’s tooling will automatically run again after a reboot or user sign-in. Scheduled tasks are a common persistence method because they do not require elevated privileges if created under a user context.
+
+### Finding
+The actor created a scheduled task named:
+
+**SupportToolUpdater**
+
+This task is configured to trigger at logon, ensuring the malicious support-themed tooling re-executes automatically on each user session.
+
+### Evidence
+- `schtasks.exe` was executed with the `/Create` parameter.
+- The task name clearly follows the attacker’s “support” narrative theme.
+- This persistence mechanism was set shortly after reconnaissance and artifact staging.
+- The timing of this event indicates deliberate preparation for long-term access.
+
+Example matching activity:
+
+``` "schtasks.exe" /Create /SC ONLOGON /TN SupportToolUpdater /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"" /RL LIMITED /F  ```
+
+
+### Query Used
+```
+DeviceProcessEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-09) .. datetime(2025-10-15))
+| where ProcessCommandLine contains "Create"
+| where FileName contains "schtasks"
+| project TimeGenerated, DeviceName, FileName, ProcessCommandLine
+```
+### Why This Matters
+
+Scheduled task persistence is widely used by attackers because it:
+
+- Survives reboots and logouts
+
+- Executes under the user context, reducing detection
+
+- Mimics legitimate administrative behavior
+
+- Requires no advanced evasion techniques
+
+- Fits into support-themed deception (naming looks “helpdesk-like”)
+
+The name SupportToolUpdater reinforces the attacker’s narrative and blends malicious persistence into what appears to be routine support maintenance.
+
+### Flag Answer
+
+<img width="931" height="143" alt="Screenshot 2025-11-16 103130" src="https://github.com/user-attachments/assets/ca5471f8-39e5-45e2-a8f5-8cb0f264ca1d" />
+
+
+``` SupportToolUpdater ```
+
+---
+
+## Flag 15 – Autorun Fallback Persistence (Registry-Based Startup Entry)
+
+### Objective
+Identify lightweight persistence mechanisms created under the user context, specifically autorun entries in the registry or startup directory. These serve as backup mechanisms designed to execute malicious tooling even if primary persistence methods are removed.
+
+### Finding
+A user-scope autorun registry value named:
+
+**RemoteAssistUpdater**
+
+was identified as the fallback persistence mechanism.  
+Although the relevant telemetry had rolled out of retention, the CTF administrator confirmed that this was the intended registry value captured during the scenario.
+
+### Evidence
+- No autorun registry events were present in current telemetry due to log retention limits.
+- Behavior aligns with the attack pattern:
+  - Support-themed naming convention  
+  - Tied directly to execution of SupportTool.ps1  
+  - Established shortly after scheduled task creation  
+- Registry autoruns are commonly used for:
+  - User-context persistence  
+  - Low-privilege persistence  
+  - Backup execution of tooling if scheduled tasks fail  
+  - Blending into IT-support workflows  
+
+### Query Used
+_The expected table returned no results due to data retention expiration, as acknowledged in scenario instructions._
+
+If logs were present, the hunt would rely on:
+
+```kql
+DeviceRegistryEvents
+| where DeviceName == "gab-intern-vm"
+| where RegistryKey contains "Run"
+| where RegistryValueName contains "Assist" or RegistryValueName contains "Support"
+```
+
+### Why This Matters
+
+Registry autoruns are highly reliable and stealthy persistence mechanisms because:
+
+- They do not require administrative rights
+
+- They execute at each user logon
+
+- They integrate into legitimate Windows behavior
+
+- They avoid creating obvious scheduled tasks
+
+- They are rarely monitored in non-hardened environments
+
+In this intrusion, RemoteAssistUpdater mirrors the support-themed deception used throughout the attack chain, reinforcing the actor’s attempt to disguise persistence as legitimate remote support activity.
+
+### Flag Answer
+
+``` RemoteAssistUpdater ```
+
+---
+
+## Flag 16 – Planted Narrative / Cover Artifact
+
+### Objective
+Identify any artifacts deliberately created to justify, disguise, or mislead investigators regarding the nature of the suspicious activity. These “narrative” files are often designed to mimic legitimate IT support artifacts.
+
+### Finding
+A shortcut file named:
+
+**SupportChat_log.lnk**
+
+was discovered and accessed on **gab-intern-vm**.  
+The file’s presence and naming strongly suggest a staged attempt to fabricate a narrative of a legitimate support session, aligning with the attacker’s support-themed deception.
+
+### Evidence
+- `SupportChat_log.lnk` was created under the **Recent** directory: `C:\Users\g4bri3lintern\AppData\Roaming\Microsoft\Windows\Recent\`
+- The shortcut was opened via `Explorer.exe`, indicating intentional viewing.
+- The timing of the artifact correlates directly with:
+- Reconnaissance  
+- Data staging  
+- Persistence creation  
+- The name “SupportChat_log” implies a support transcript or troubleshooting log, meant to obscure malicious intent.
+
+### Query Used
+```kql
+DeviceFileEvents
+| where TimeGenerated between (datetime(2025-10-09) .. datetime(2025-10-10))
+| where DeviceName =~ "gab-intern-vm"
+| where InitiatingProcessAccountName == "g4bri3lintern"
+| where InitiatingProcessFileName contains "explorer"
+| project TimeGenerated, ActionType, DeviceName, FileName,
+        InitiatingProcessFileName, FolderPath
+```
+
+### Why This Matters
+
+Planted artifacts are a hallmark of attackers attempting to blend into legitimate workflows. This technique:
+
+- Establishes a false explanation for observed activity
+
+- Reduces suspicion for high-risk commands executed earlier
+
+- Suggests a support-related context to justify reconnaissance and persistence
+
+- Can mislead inexperienced analysts or automated triage systems
+
+- Aligns with long-term persistence by normalizing suspicious actions
+
+The use of a fake “support chat log” directly reinforces the actor’s overarching theme of impersonating remote assistance.
+
+### Flag Answer
+
+<img width="910" height="850" alt="Screenshot 2025-11-16 104957" src="https://github.com/user-attachments/assets/9a73805b-9f64-4fd4-9855-c17a2e089431" />
+
+
+``` SupportChat_log.lnk ```
+
+---
+
+# MITRE ATT&CK Mapping
+
+The following table maps the observed behaviors during the SupportTool intrusion to relevant MITRE ATT&CK techniques. Techniques were selected based on confirmed telemetry, tool usage, and the attacker’s workflow across execution, discovery, persistence, and exfiltration phases.
+
+| Flag | Tactic | Technique | ID | Description |
+|------|--------|-----------|----|-------------|
+| 1 | Recon | Initial Target Identification | N/A | Identification of the starting point for threat analysis (not a MITRE technique). |
+| 2 | Execution | Command and Scripting Interpreter: PowerShell | **T1059.001** | Execution of `SupportTool.ps1` with `-ExecutionPolicy` bypass. |
+| 3 | Defense Evasion | Masquerading | **T1036** | Use of `DefenderTamperArtifact.lnk` to imply security tampering. |
+| 4 | Credential Access | Clipboard Data | **T1115** | PowerShell command executed to retrieve clipboard contents. |
+| 5 | Discovery | System Owner/User Discovery | **T1087** | Session enumeration (`qwinsta`) to identify active users. |
+| 6 | Discovery | File and Directory Discovery | **T1083** | Disk enumeration using `wmic logicaldisk` to map storage surfaces. |
+| 7 | Discovery | System Network Configuration Discovery | **T1016** | Outbound connectivity tests to validate external network access. |
+| 7 | Command & Control | Application Layer Protocol | **T1071.001** | HTTP(S)-based outbound communication blending with legitimate traffic. |
+| 8 | Discovery | Process Discovery | **T1057** | Runtime process listing using `tasklist.exe`. |
+| 9 | Discovery | Permission Groups Discovery | **T1069** | `whoami /groups` used to enumerate privilege levels. |
+| 10 | Discovery | System Network Connections Discovery | **T1049** | Outbound checks to `www.msftconnecttest.com`. |
+| 10 | C2 / Exfil Prep | Exfiltration Over Unencrypted/Encrypted Channel | **T1041 / T1048** | Validation of outbound channels prior to exfiltration attempt. |
+| 11 | Collection | Data Staged | **T1074** | Creation of `ReconArtifacts.zip` in `C:\Users\Public`. |
+| 12 | Exfiltration | Exfiltration Over Web Services | **T1567.002** | Attempted outbound transfer to `100.29.147.161`. |
+| 13 | Persistence | Scheduled Task | **T1053.005** | Task created (`SupportToolUpdater`) for logon persistence. |
+| 14 | Persistence | Registry Run Keys/Startup Folder | **T1547.001** | Autorun entry created (`RemoteAssistUpdater`). |
+| 15 | Defense Evasion | Misdirection / User Impersonation | **T1036.004** | Use of fake “SupportChat_log.lnk” to justify earlier activity. |
+
+---
+
+# MITRE Summary by Tactic
+
+### **Execution**
+- `T1059.001` – PowerShell execution via custom support script.
+
+### **Privilege & Session Discovery**
+- `T1087`, `T1069`, `T1049`, `T1016` – User, group, session, and network configuration discovery.
+
+### **Defense Evasion**
+- `T1036` / `T1036.004` – Decoy artifacts and support-themed misdirection.
+
+### **Credential Access**
+- `T1115` – Clipboard content probing.
+
+### **Discovery**
+- `T1083`, `T1057` – Storage and process enumeration.
+- `T1016` – Network configuration validation.
+
+### **Collection**
+- `T1074` – Data staged in ZIP format.
+
+### **Exfiltration**
+- `T1567.002`, `T1041`, `T1048` – Outbound channel testing and simulated exfiltration.
+
+### **Persistence**
+- `T1053.005` – Scheduled task persistence.
+- `T1547.001` – Autorun registry persistence.
+
+---
+
+# MITRE ATT&CK Narrative
+
+The activity observed on **gab-intern-vm** aligns closely with multiple stages of the MITRE ATT&CK framework, particularly within the Execution, Discovery, Persistence, Defense Evasion, and Exfiltration tactics. The following narrative outlines how the attacker’s actions map to ATT&CK techniques and how those behaviors fit into a coherent intrusion chain.
+
+The intrusion began with the execution of a support-themed PowerShell script (`SupportTool.ps1`) delivered and run from the **Downloads** directory. This behavior corresponds to **T1059.001 – PowerShell**, as the actor used command-line parameters (`-ExecutionPolicy Bypass`) to override built-in protections and execute untrusted code.
+
+Immediately following initial execution, the actor conducted a series of **Discovery** activities. This included:
+
+- **Clipboard probing** (`Get-Clipboard`) aligning with **T1115 – Clipboard Data**  
+- **Session enumeration** using `qwinsta` and `quser`, aligning with **T1087 / T1033 – Account & System Owner/User Discovery**
+- **Privilege inspection** using `whoami /groups`, mapping to **T1069 – Permission Groups Discovery**
+- **Storage enumeration** using `wmic logicaldisk`, mapping to **T1083 – File and Directory Discovery**
+- **Process enumeration** with `tasklist.exe`, matching **T1057 – Process Discovery**
+
+These actions formed a structured recon phase intended to determine the system’s state, privileges, available data sources, and running defenses.
+
+In parallel, the actor validated outbound connectivity using requests to **`www.msftconnecttest.com`**, blending real-world egress tests into routine system traffic. This activity maps to **T1046 – Network Service Scanning** and **T1016 – System Network Configuration Discovery**, supporting later exfiltration attempts.
+
+The attacker then prepared for data removal through **staging**, compressing reconnaissance artifacts into `ReconArtifacts.zip` under the **Public** directory. This behavior aligns with **T1074 – Data Staged**, indicating intent to consolidate materials for transfer. This was followed by a simulated outbound transfer attempt to external IP **100.29.147.161**, mapping to **T1041 – Exfiltration Over C2 Channel** or **T1567.002 – Exfiltration to Cloud Storage** depending on the categorization used.
+
+Persistence mechanisms were established through a scheduled task named **SupportToolUpdater**, mapping to **T1053.005 – Scheduled Task**, and a backup autorun entry **RemoteAssistUpdater**, mapping to **T1547.001 – Registry Run Keys / Startup Folder**. These dual persistence mechanisms ensured the malicious tooling would continue to run even after reboot or user logon.
+
+Finally, the attacker deployed deceptive artifacts—**DefenderTamperArtifact.lnk** and **SupportChat_log.lnk**—designed to establish a false narrative of remote support assistance. This activity aligns with **T1036 – Masquerading**, as the attacker used naming and placement strategies to disguise malicious intent and mislead analysts.
+
+Overall, the sequence of observed behaviors reflects a deliberate, methodical intrusion workflow involving initial execution, layered reconnaissance, persistence establishment, data staging, exfiltration validation, and deception—each mapping cleanly to well-defined MITRE ATT&CK techniques.
+
+---
+
+# After-Action Recommendations
+
+The investigation into the support-themed intrusion on **gab-intern-vm** revealed several gaps in monitoring, configuration, and user security posture that enabled the attacker to execute reconnaissance, stage artifacts, and establish persistence. The following recommendations outline actionable steps to reduce the likelihood of similar incidents and strengthen endpoint resilience.
+
+---
+
+## 1. Enhance PowerShell Logging and Restrict Execution Policies
+
+### Recommendation
+Enable advanced PowerShell logging and prevent unverified scripts from running by default.
+
+### Actions
+- Enforce `AllSigned` or `RemoteSigned` execution policies via GPO.
+- Enable:
+  - Module Logging  
+  - Script Block Logging  
+  - PowerShell Transcription  
+- Forward PowerShell logs to SIEM for real-time alerting.
+
+### Rationale
+The attacker used PowerShell with `-ExecutionPolicy` to bypass restrictions. Improved logging and enforcement would allow earlier detection and prevention of unauthorized script execution.
+
+---
+
+## 2. Harden User Download Folders and Block Script Execution
+
+### Recommendation
+Prevent execution of scripts directly from user-controlled directories such as `Downloads`.
+
+### Actions
+- Enforce WDAC (Windows Defender Application Control) or AppLocker policies:
+  - Block `.ps1`, `.bat`, `.cmd` outside approved paths.
+- Implement Protected Folders for high-risk directories.
+
+### Rationale
+The initial intrusion originated from a script executed directly from the Downloads folder. Blocking execution reduces common user-error attack paths.
+
+---
+
+## 3. Improve Endpoint Protection Configuration and Detection Rules
+
+### Recommendation
+Ensure Defender and EDR settings are fully enabled and monitored for tamper-themed behavior.
+
+### Actions
+- Enable Tamper Protection.
+- Create alerting rules for:
+  - Suspicious `.lnk` creation
+  - Execution of system-recon commands (`whoami`, `qwinsta`, etc.)
+  - Disk enumeration commands (`wmic logicaldisk`)
+- Monitor for abnormal scheduled task creation.
+
+### Rationale
+The attacker planted fake tamper artifacts and added persistence via scheduled tasks. Improved detection logic would flag these behaviors.
+
+---
+
+## 4. Restrict User Privileges and Enforce Least Privilege
+
+### Recommendation
+Limit user rights to reduce the impact of account compromise.
+
+### Actions
+- Review membership in local groups (e.g., Users, Remote Desktop Users).
+- Standardize least-privilege profiles for intern endpoints.
+- Enforce MFA for privileged operations.
+
+### Rationale
+The compromised account was able to execute recon commands and persistence actions without elevation. Least privilege would reduce this attack surface.
+
+---
+
+## 5. Improve Network Egress Controls and Monitoring
+
+### Recommendation
+Implement stricter control and monitoring of outbound network activity.
+
+### Actions
+- Restrict outbound traffic to approved domains.
+- Log and alert on:
+  - Outbound connections to unknown IPs
+  - HTTP traffic to non-corporate servers
+- Enable DNS logging and anomaly detection.
+
+### Rationale
+The attacker tested outbound connectivity (`msftconnecttest.com`) and attempted exfiltration (`100.29.147.161`). Stronger egress controls would have detected or blocked this.
+
+---
+
+## 6. Monitor for File Staging and Public Directory Usage
+
+### Recommendation
+Detect and prevent the staging of large files or archives in public-accessible directories.
+
+### Actions
+- Monitor `C:\Users\Public` for new ZIP or data aggregation artifacts.
+- Enforce access controls restricting write access to shared directories.
+- Implement automated scanning for suspicious archive creation.
+
+### Rationale
+The attacker created `ReconArtifacts.zip` in the Public directory, a predictable and writable path. Monitoring this location reduces risk of unnoticed staging.
+
+---
+
+## 7. Strengthen User Security Awareness and Training
+
+### Recommendation
+Educate users about risks related to unsolicited support tools and suspicious downloads.
+
+### Actions
+- Train users to:
+  - Avoid running scripts from Downloads
+  - Recognize common social engineering patterns
+  - Report unexpected “support” activity
+- Provide simulated phishing and support impersonation exercises.
+
+### Rationale
+The intrusion leveraged a support/helpdesk theme, a common form of user impersonation. Awareness training can reduce vulnerability to these tactics.
+
+---
+
+## 8. Improve Log Retention Policies for Endpoint Telemetry
+
+### Recommendation
+Ensure telemetry retention is long enough to support full forensic investigation.
+
+### Actions
+- Extend MDE/EDR retention from the minimum to at least 30–90 days.
+- Route logs to SIEM or cloud storage to preserve data for hunts.
+- Enable long-term archival for key event types.
+
+### Rationale
+Some registry events (e.g., autorun persistence) were missing due to log retention expiration. Extended retention improves investigation fidelity.
+
+---
+
+## 9. Implement Automated Alerting for Persistence Mechanisms
+
+### Recommendation
+Deploy monitoring and alerting for scheduled tasks and autorun entries.
+
+### Actions
+- Enable detection rules for:
+  - `schtasks /Create`
+  - Registry modifications under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+- Enforce baseline comparisons to identify new or modified startup items.
+
+### Rationale
+The attacker created `SupportToolUpdater` (scheduled task) and `RemoteAssistUpdater` (autorun). Automated detection helps prevent unnoticed re-entry points.
+
+---
+
+# Summary
+
+By implementing these recommendations—strengthening endpoint controls, improving telemetry, limiting user permissions, and enhancing user awareness—the organization can significantly reduce the likelihood of similar support-themed intrusions and improve detection capabilities across early recon, staging, and persistence phases.
+
+---
+
+# Conclusion
+
+The investigation into the support-themed intrusion on **gab-intern-vm** revealed a deliberate and methodical sequence of attacker actions designed to blend malicious activity into what appeared to be a routine remote-assistance session. By consistently using naming conventions associated with IT support workflows—*SupportTool, RemoteAssistUpdater, SupportChat_log*—the actor effectively masked reconnaissance, staging, and persistence steps behind a plausible operational narrative.
+
+Analysis confirmed that the intrusion progressed through a complete and coherent attack chain:
+
+- Initial access via script execution in an untrusted user directory  
+- Host, privilege, and session reconnaissance  
+- Storage and runtime enumeration  
+- Data staging in a publicly accessible directory  
+- Outbound communication testing and simulated exfiltration  
+- Multi-layer persistence (scheduled tasks + autorun registry keys)  
+- Placement of decoy artifacts intended to justify or mislead  
+
+Throughout the timeline, the attacker demonstrated a strong preference for **living-off-the-land techniques**, leveraging native Windows utilities such as *PowerShell, whoami, qwinsta, WMIC,* and *tasklist*. This approach minimized their detection footprint and aligned closely with early-stage hands-on-keyboard intrusion patterns.
+
+Although the simulated exfiltration attempt did not result in confirmed data loss, the presence of a staged ZIP archive and outbound transfer attempts shows clear intent to extract reconnaissance data. Combined with both primary and fallback persistence mechanisms, the actor was positioned to regain access to the endpoint if left uninterrupted.
+
+Overall, the scenario highlights the importance of monitoring user-context script execution, detecting reconnaissance behaviors early, and correlating subtle artifacts—such as deceptive log files or naming conventions—into a holistic narrative. Effective detection relies not only on individual alerts but on understanding how sequential low-signal events build toward a clearly malicious operational pattern.
 
 
