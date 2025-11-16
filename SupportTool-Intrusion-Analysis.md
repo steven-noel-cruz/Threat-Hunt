@@ -524,4 +524,71 @@ In this scenario, the process inventory aligns with the actor’s methodical rec
 
 <img width="588" height="258" alt="image" src="https://github.com/user-attachments/assets/45e46f46-377f-49e6-92a7-e0a1dd328454" />
 
-tasklist.exe
+``` tasklist.exe ```
+
+---
+
+## Flag 10 – Privilege Surface Check (User & Group Enumeration)
+
+### Objective
+Identify attempts to enumerate the current user’s privilege level, group membership, and available security tokens. Attackers routinely perform this step early in an intrusion to determine whether privilege escalation is necessary.
+
+### Finding
+The actor executed the Windows-native command:
+
+``` whoami /groups ```
+
+
+This command reveals all security groups associated with the current account and is commonly used to assess available privileges.  
+The **first** privilege enumeration event occurred at:
+
+**2025-10-09T12:52:14.3135459Z**
+
+### Evidence
+- `whoami /groups` was executed shortly after session enumeration (`qwinsta`).
+- This positions the activity directly within the reconnaissance phase of the intrusion.
+- The command provided the actor with insight into privilege level, token groups, and potential escalation paths.
+- The timestamp represents the earliest privilege-mapping activity on the host.
+
+### Query Used
+```kql
+let T0 = datetime(2025-10-09);
+let T1 = datetime(2025-10-15);
+DeviceProcessEvents
+| where DeviceName =~ "gab-intern-vm"
+| where TimeGenerated between (T0 .. T1)
+| where ProcessCommandLine has_any ("whoami /all","whoami /groups","whoami /priv","whoami")
+| project TimeGenerated, FileName, ProcessId, ProcessCommandLine,
+          InitiatingProcessFileName, ReportId
+| order by TimeGenerated asc
+| take 1
+```
+### Why This Matters
+
+Privilege enumeration is a strong indicator of malicious intent because it:
+
+Helps attackers determine what access they currently have
+
+Identifies token privileges (SeDebugPrivilege, SeBackupPrivilege, etc.)
+
+Reveals whether the user belongs to administrative or delegated groups
+
+Guides next steps such as persistence, credential access, or lateral movement
+
+The timing of this event—immediately after session recon—aligns with typical attacker workflow.
+
+### Flag Answer
+
+<img width="451" height="162" alt="Screenshot 2025-11-16 100320" src="https://github.com/user-attachments/assets/9cf77afc-4d56-4211-8a42-d2af538de273" />
+
+
+``` 2025-10-09T12:52:14.3135459Z ```
+
+---
+
+
+
+
+
+
+
