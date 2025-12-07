@@ -84,11 +84,12 @@ Event: Remote logon from 10.0.8.4
 Technique: Remote Services (T1021)
 
 ### System & Network Discovery
-Timestamp	Command	Technique
-12:40:54 AM	net share	Local Share Discovery (T1135)
-12:42:01 AM	net view \\10.1.0.188	Remote Share Discovery (T1135)
-12:40:09 AM	whoami /all	Privilege Discovery (T1033)
-12:42:46 AM	ipconfig /all	Network Config Discovery (T1016)
+| Timestamp   | Command                 | Technique                        |
+| ----------- | ----------------------- | -------------------------------- |
+| 12:40:54 AM | `net share`             | Local Share Discovery (T1135)    |
+| 12:42:01 AM | `net view \\10.1.0.188` | Remote Share Discovery (T1135)   |
+| 12:40:09 AM | `whoami /all`           | Privilege Discovery (T1033)      |
+| 12:42:46 AM | `ipconfig /all`         | Network Config Discovery (T1016) |
 
 Device: azuki-fileserver01 — Account: fileadmin
 
