@@ -351,7 +351,7 @@ Determine which device the attacker targeted for lateral movement after re-enter
 
 We pivoted to RDP usage because:
 
-- Attackers commonly use MSTSC.exe (Remote Desktop)
+- Attackers commonly use `MSTSC.exe` (Remote Desktop)
 
 - RDP generates clear DeviceLogonEvents
 
@@ -429,6 +429,8 @@ This confirms compromise of the business file server.
 ### Final Flag Answer
 
 ` azuki-fileserver01`
+
+---
 
 ## FLAG 3 — LATERAL MOVEMENT: Compromised Administrator Account
 
@@ -509,6 +511,8 @@ This event is a pivot point in the breach’s success.
 
 ` fileadmin `
 
+---
+
 ## FLAG 4 — DISCOVERY: Local Share Enumeration Command
 
 ### Objective
@@ -583,4 +587,307 @@ It demonstrates:
 
 ` "net.exe" share `
 
-##
+---
+
+## FLAG 5 — DISCOVERY: Remote Share Enumeration Command
+
+### Objective
+
+Identify the command used to enumerate remote network shares on another system inside the environment.
+
+### Investigation Approach
+
+After identifying shares locally, the attacker shifted focus to other file servers or network nodes with potentially sensitive content.
+
+We filtered process telemetry on the compromised file server for:
+
+- Executions of `net.exe`
+- With UNC paths (\\<IP>\<share>)
+
+This indicates exploration across the internal network.
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where ProcessCommandLine contains "\\"
+| where FileName =~ "net.exe"
+| order by Timestamp asc
+```
+
+### Evidence Observed
+
+This entry confirmed remote share scanning:
+
+```
+Nov 22, 2025 12:42:01 AM
+Command: "net.exe" view \\10.1.0.188
+Device: azuki-fileserver01
+Account: fileadmin
+```
+
+The remote host 10.1.0.188 was probed for open shares — exposing adversary reconnaissance scope.
+
+### Analysis & Interpretation
+
+This step indicates:
+
+- Movement from local to network-wide enumeration
+- Intent to discover additional data sources
+- Mapping of file-sharing infrastructure
+
+This is a typical move before staging data for exfiltration.
+
+### Why This Matters
+
+Remote share enumeration highlights:
+
+- The adversary’s escalating objective — data theft
+- Expansion of attack surface understanding
+- Use of built-in LOLBin commands to avoid detection
+
+### MITRE ATT&CK Mapping
+
+- Discovery: T1135 — Network Share Discovery
+
+### Final Flag Answer
+
+` "net.exe" view \\10.1.0.188 `
+
+---
+
+## FLAG 6 — DISCOVERY: Privilege Enumeration Command
+
+### Objective
+
+Determine the exact command used by the attacker to identify their current security context, including:
+
+- User identity
+- Group memberships
+- Assigned privileges
+
+This helps the adversary understand what actions are possible and whether privilege escalation is needed.
+
+### Investigation Approach
+
+Privilege assessment often appears early after lateral movement.
+A common Windows-native utility for this is `whoami.exe` with advanced flags.
+
+We again examined process execution telemetry on the compromised file server:
+
+- `DeviceProcessEvents`
+- Filtering for `whoami.exe`
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where FileName =~ "whoami.exe"
+| order by Timestamp asc
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
+```
+
+### Evidence Observed
+
+In the results, a highly revealing command was executed:
+
+<img width="652" height="69" alt="image" src="https://github.com/user-attachments/assets/b0c33ce5-9661-42fc-a488-eebf3ae5d529" />
+
+
+```
+Nov 22, 2025 12:40:09 AM
+Command: "whoami.exe" /all
+Device: azuki-fileserver01
+Account: fileadmin
+```
+
+This output would return:
+
+- Integrity level
+- Domain groups
+- Assigned privileges
+- Authentication method
+
+### Analysis & Interpretation
+
+This confirms the attacker is:
+
+- Verifying existing administrative privileges
+- Assessing whether further escalation is needed
+- Validating access to credentials, file shares, and services
+
+The /all flag is very intentional — it reveals maximum detail.
+
+### Why This Matters
+
+Privilege awareness is critical for:
+
+- Determining next move in the attack chain
+- Understanding security boundaries
+- Identifying additional escalation paths
+
+It signals that the adversary is transitioning from exploration to action.
+
+### MITRE ATT&CK Mapping
+
+- Discovery: T1033 — System Owner/User Discovery
+
+### Final Flag Answer
+
+` "whoami.exe" /all `
+
+---
+
+## FLAG 7 — DISCOVERY: Network Configuration Command
+
+### bjective
+
+Identify the command used by the attacker to obtain detailed network adapter and domain configuration information from the compromised server.
+
+### Investigation Approach
+
+After confirming privileges and share accessibility, the attacker needed to understand:
+
+- IP addressing
+- DNS server configuration
+- Domain membership
+- Routing and internal network scope
+
+Windows includes a native tool (ipconfig) that provides this, and adding /all returns extended configuration.
+
+We filtered process telemetry for that utility.
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where FileName =~ "ipconfig.exe"
+| order by Timestamp asc
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
+```
+
+### Evidence Observed
+
+A highly-informative network discovery command was executed:
+
+<img width="275" height="111" alt="image" src="https://github.com/user-attachments/assets/67dbcd4f-d7f8-4068-8de8-2f4908a16258" />
+
+
+```
+Nov 22, 2025 12:42:46 AM
+Command: "ipconfig.exe" /all
+Device: azuki-fileserver01
+Account: fileadmin
+```
+
+This output would reveal:
+
+- NIC MAC addresses
+- DNS suffix and domain name
+- NetBIOS status
+- DHCP configuration
+- IPv4/IPv6 details
+
+All very valuable for continuing lateral movement or exfiltration.
+
+### Analysis & Interpretation
+
+This confirms:
+
+- Intentional mapping of the internal network landscape
+- Identification of trusted subnets and routing structure
+- Validation of domain environment — critical for later credential attacks
+
+The attacker now understands where they can go and what data may be reachable.
+
+### Why This Matters
+
+- Enables attacker to navigate the network intelligently
+- Supports additional discovery and pivot targeting
+- Confirms Windows Domain infrastructure is in use — a major escalation point
+
+This is a standard internal reconnaissance step.
+
+### MITRE ATT&CK Mapping
+
+- Discovery: T1016 — System Network Configuration Discovery
+
+### Final Flag Answer
+
+` "ipconfig.exe" /all `
+
+---
+
+## FLAG 8 — DEFENSE EVASION: Directory Hiding Command
+
+### Objective
+
+Determine the exact command the attacker used to hide the staging directory to evade casual inspection and certain security controls.
+
+### Investigation Approach
+
+By this point, attacker activity clearly shifted toward collection and preparation.
+That requires a location to store:
+
+- Tools
+- Credential dumps
+- Copied data
+
+To conceal these items, adversaries often manipulate filesystem attributes using attrib.exe:
+
+- +h → hidden
+- +s → system (makes it resemble OS-managed directories)
+
+We filtered for executions of attrib.exe on the file server.
+
+### Query Used
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where FileName =~ "attrib.exe"
+| order by Timestamp asc
+```
+### Evidence Observed
+
+The critical hiding action was observed:
+
+<img width="330" height="109" alt="image" src="https://github.com/user-attachments/assets/07670800-7df8-4e12-8eea-9f8361445100" />
+
+
+```
+Nov 22, 2025 12:55:43 AM
+Command: "attrib.exe" +h +s C:\Windows\Logs\CBS
+Device: azuki-fileserver01
+Account: fileadmin
+```
+
+This effectively turned the CBS folder into a covert staging area — visually indistinguishable from protected system logs.
+
+### Analysis & Interpretation
+
+This confirms:
+
+- The attacker is actively preparing for data staging
+- They intend to hide evidence from:
+-- Normal Windows Explorer views
+-- Basic IR triage
+- They are using native utilities (LOLbins) to avoid detection
+
+The command structure is extremely common in Windows-based targeted intrusions.
+
+### Why This Matters
+
+Hidden directories signal:
+
+A shift toward longer-term operations
+
+Intent to remain stealthy during staging
+
+Increased difficulty for post-incident evidence recovery
+
+It is a strong behavioral IOC for defense evasion.
+
+### MITRE ATT&CK Mapping
