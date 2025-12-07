@@ -871,7 +871,7 @@ This effectively turned the CBS folder into a covert staging area — visually i
 This confirms:
 
 - The attacker is actively preparing for data staging
-- They intend to hide evidence from:
+* They intend to hide evidence from:
  - Normal Windows Explorer views
  - Basic IR triage
 - They are using native utilities (LOLbins) to avoid detection
