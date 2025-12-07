@@ -263,4 +263,37 @@ The adversary’s actions indicate:
 
 ## FLAG 1 — INITIAL ACCESS: Return Connection Source
 
+### Objective
+Determine the source IP address used when the attacker returned to the environment after their initial access and 72-hour dwell period.
+
+### Investigation Approach
+
+Since the attacker originally compromised Azuki three days earlier (Port of Entry), we pivoted into endpoint logon telemetry — specifically:
+
+- DeviceLogonEvents
+
+- Filtering for systems containing “azuki” in their hostnames
+
+- Looking for RemoteIP fields on successful logons
+
+### Query Used
+
+` DeviceLogonEvents
+| where DeviceName contains "azuki"
+| where ActionType contains "success"
+| where RemoteIP != ""
+| project Timestamp, DeviceName, AccountName, RemoteIP, ActionType, RemoteDeviceName `
+
+### Evidence Observed
+
+In the results, one logon stood out as the first return session linked to the second phase of the intrusion:
+
+`Nov 22, 2025 12:27:53 AM
+Device: azuki-sl
+Account: kenji.sato
+Remote IP: 159.26.106.98`
+
+This IP was not the same as the IP used during the original compromise, aligning with the brief’s expectations:
+
+“infrastructure has changed — different IP than CTF 1”
 
