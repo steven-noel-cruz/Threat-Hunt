@@ -1232,3 +1232,101 @@ It marks the transition from access to actual data theft in progress.
 
 ---
 
+## FLAG 13 — COLLECTION: Compression Command
+
+### Objective
+
+Identify the exact command line used to compress the staged data into a portable exfil package.
+
+### Investigation Approach
+
+Once the attacker:
+- Gathered credentials (`IT-Admin-Passwords.csv`)
+- Copied the IT Admin share (Flag 12)
+- Hid the staging directory (Flag 8)
+
+…the next operational step was to bundle everything into a single archive for transfer off-network.
+
+We focused on:
+
+- `DeviceProcessEvents`
+- Execution of utilities capable of Linux-compatible compression
+→ Equipped Windows servers include `tar.exe`
+(a strong indicator of sophistication and cross-platform tooling)
+
+We filtered for commands writing to:
+
+`C:\Windows\Logs\CBS\`
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName contains "azuki-fileserver01"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where ProcessCommandLine contains "it-admin"
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by Timestamp asc
+```
+
+📌 Evidence Observed
+
+One compression event stood out:
+
+<img width="1487" height="867" alt="10 168 27 1" src="https://github.com/user-attachments/assets/8d6e21c9-7ec6-44d2-b8e9-f368be9fa97e" />
+
+
+```
+Nov 22, 2025 1:25:31 AM
+Device: azuki-fileserver01
+Account: fileadmin
+Command:
+"tar.exe" -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .
+```
+
+Breakdown:
+
+| Parameter | Meaning                        |
+| --------- | ------------------------------ |
+| `-c`      | create a new archive           |
+| `-z`      | compress using gzip            |
+| `-f`      | specify output file            |
+| `-C`      | change working directory       |
+| `.`       | include all contents in folder |
+
+
+The adversary crafted a Unix-standard archive — ideal for later exfil & remote inspection.
+
+### Analysis & Interpretation
+
+This confirms:
+
+Intent to steal data, not merely explore
+
+Careful preparation of stolen files into a single, compact blob
+
+Cross-platform tradecraft, anticipating handling on Linux-based staging servers or C2 environments
+
+This is a clear pivot from collection → exfiltration.
+
+### Why This Matters
+
+Demonstrates successful data theft objectives
+
+Archive contents are now easy to move and hide
+
+The specific archive name (credentials.tar.gz) clearly signals high-value stolen secrets
+
+This file represents the highest-impact loss in the breach.
+
+### MITRE ATT&CK Mapping
+| Technique Category | Technique              | ID            |
+| ------------------ | ---------------------- | ------------- |
+| Collection         | Archive Collected Data | **T1560.001** |
+
+### Final Flag Answer
+
+`"tar.exe" -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .`
+
+---
+
