@@ -436,4 +436,151 @@ This confirms compromise of the business file server.
 
 Identify which administrator account the attacker leveraged to log into the file server and continue the intrusion.
 
-###
+### Investigation Approach
+
+Once we validated the attacker’s pivot to azuki-fileserver01, the next step was determining which credentials enabled that access.
+
+We again used:
+
+- DeviceLogonEvents
+- Filtering for successful logons
+- On the file server
+- From a remote source
+- During the attacker’s operational window
+
+We specifically focused on admin-class accounts, since they align with targeted file access.
+
+### Query Used
+
+```
+DeviceLogonEvents
+| where DeviceName == "azuki-fileserver01"
+| where LogonStatus == "Success"
+| where RemoteIP != ""
+| order by Timestamp asc
+```
+We reviewed logons during Nov 22 breach activity.
+
+### Evidence Observed
+
+An unmistakable authentication entry showed the attacker logging in using a privileged account:
+
+<img width="275" height="137" alt="image" src="https://github.com/user-attachments/assets/56b3e85e-4cdb-40ce-9e85-bd9d7a67c6ca" />
+
+
+```
+Nov 22, 2025 12:38:49 AM
+Device: azuki-fileserver01
+Account: fileadmin
+RemoteIP: 10.1.0.204
+LogonSuccess
+```
+
+This was a different remote source than used during the initial foothold — further proving active lateral movement using valid credentials.
+
+### Analysis & Interpretation
+
+This event confirms:
+
+- Compromised credentials for a privileged role
+- Access to folders and shares storing sensitive business data
+- The account likely possesses write permissions, enabling staging and persistence
+- The attacker intentionally leveraged legitimate access pathways to avoid detection
+
+This marks a significant expansion of access within the network.
+
+### Why This Matters
+
+Compromising this particular admin account:
+
+- Enables data theft
+- Allows persistent access to high-value locations
+- Reduces detection likelihood by mimicking normal administrative traffic
+- Represents a direct threat to data confidentiality
+
+This event is a pivot point in the breach’s success.
+
+### MITRE ATT&CK Mapping
+
+- T1078 — Valid Accounts
+- TA0008 — Lateral Movement
+
+### Final Flag Answer
+
+` fileadmin `
+
+## FLAG 4 — DISCOVERY: Local Share Enumeration Command
+
+### Objective
+
+Determine the exact command the attacker used to enumerate local network shares on the compromised file server.
+
+### Investigation Approach
+
+After gaining access to azuki-fileserver01, the adversary needed to understand what data was available:
+
+- Which directories were shared?
+- What business data could be accessed?
+- Where could staging occur?
+
+We pivoted into process telemetry on the file server, filtering for:
+
+- Windows administrative utilities
+- Known share enumeration tools
+→ particularly net.exe
+
+### Query Used
+
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where AccountName == @"fileadmin"
+| where ProcessCommandLine contains "share"
+| where FileName =~ "net.exe"
+| order by Timestamp asc
+```
+
+### Evidence Observed
+
+This key discovery command was observed:
+
+<img width="278" height="119" alt="image" src="https://github.com/user-attachments/assets/ce4778f3-2455-4125-9292-16c2fc36fdfd" />
+
+
+```
+Nov 22, 2025 12:40:54 AM
+Command: "net.exe" share
+Device: azuki-fileserver01
+Account: fileadmin
+```
+
+This aligns perfectly with behavior described in the incident brief.
+
+### Analysis & Interpretation
+
+This activity confirms:
+
+- Attacker reconnaissance of local shared directories
+- Searching for business-critical data repositories
+- Establishment of which locations to target next for staging or exfil
+
+This fits the early data-discovery stage of the intrusion.
+
+### Why This Matters
+
+Enumeration of local shares is a precursor to data theft.
+It demonstrates:
+
+- The attacker is preparing for collection
+- They have sufficient privileges to enumerate shares
+- They are actively scoping valuable internal directories
+
+### MITRE ATT&CK Mapping
+
+- Discovery: T1135 — Network Share Discovery
+
+### Final Flag Answer
+
+` "net.exe" share `
+
+##
