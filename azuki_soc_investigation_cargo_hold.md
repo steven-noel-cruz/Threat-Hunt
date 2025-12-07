@@ -278,20 +278,24 @@ Since the attacker originally compromised Azuki three days earlier (Port of Entr
 
 ### Query Used
 
-` DeviceLogonEvents
+`
+DeviceLogonEvents
 | where DeviceName contains "azuki"
 | where ActionType contains "success"
 | where RemoteIP != ""
-| project Timestamp, DeviceName, AccountName, RemoteIP, ActionType, RemoteDeviceName `
+| project Timestamp, DeviceName, AccountName, RemoteIP, ActionType, RemoteDeviceName 
+`
 
 ### Evidence Observed
 
 In the results, one logon stood out as the first return session linked to the second phase of the intrusion:
 
-`Nov 22, 2025 12:27:53 AM
+`
+Nov 22, 2025 12:27:53 AM
 Device: azuki-sl
 Account: kenji.sato
-Remote IP: 159.26.106.98`
+Remote IP: 159.26.106.98
+`
 
 This IP was not the same as the IP used during the original compromise, aligning with the brief’s expectations:
 
