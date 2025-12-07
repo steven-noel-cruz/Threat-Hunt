@@ -290,6 +290,9 @@ DeviceLogonEvents
 
 In the results, one logon stood out as the first return session linked to the second phase of the intrusion:
 
+<img width="280" height="133" alt="image" src="https://github.com/user-attachments/assets/b90008ae-29e4-4f4f-b07a-806cbb74b880" />
+
+
 ```
 Nov 22, 2025 12:27:53 AM
 Device: azuki-sl
@@ -301,3 +304,136 @@ This IP was not the same as the IP used during the original compromise, aligning
 
 “infrastructure has changed — different IP than CTF 1”
 
+### Analysis & Interpretation
+
+This event confirms:
+
+- The attacker reengaged with the compromised workstation
+
+- A new external C2 host was used to avoid correlation with earlier activity
+
+- The attacker retains valid credentials to access the system legitimately
+
+This is a common obfuscation tactic to bypass static IOC blocking.
+
+### Why This Matters
+
+This behavior demonstrates:
+
+- Persistence of access
+
+- Likelihood of legitimate credential theft
+
+- Intent to continue deeper into the environment
+
+- A shift to operational execution from reconnaissance
+
+This log event establishes the start of the active breach.
+
+### MITRE ATT&CK Mapping
+
+- TA0001 — Initial Access
+- Valid Accounts (T1078)
+
+### Final Flag Answer
+
+` 159.26.106.98 `
+
+---
+
+##  FLAG 2 — LATERAL MOVEMENT: Compromised Device Name
+
+### Objective
+
+Determine which device the attacker targeted for lateral movement after re-entering the network — specifically the file server containing business-critical data.
+
+### Investigation Approach
+
+We pivoted to RDP usage because:
+
+- Attackers commonly use MSTSC.exe (Remote Desktop)
+
+- RDP generates clear DeviceLogonEvents
+
+- Successful logons reveal pivot targets
+→ especially when using compromised admin credentials
+
+We filtered for logons originating from the initially compromised workstation.
+
+### Query Used
+
+```
+DeviceLogonEvents
+| where DeviceName contains "azuki"
+| where RemoteIP != ""
+| order by Timestamp asc
+```
+
+We scanned results for:
+
+- LogonSuccess
+
+- RemoteIP sourced from an internal Azuki workstation
+
+- Destination = a server-class device
+
+### Evidence Observed
+
+The following RDP session confirmed the lateral pivot:
+
+<img width="686" height="60" alt="image" src="https://github.com/user-attachments/assets/34e8dd67-162e-4e7d-8378-8a8b4a845162" />
+
+<img width="336" height="553" alt="image" src="https://github.com/user-attachments/assets/ffa2da4c-603f-4f6a-9158-53b5c75cb1da" />
+
+```
+Nov 19, 2025 7:10:42 PM
+Device: azuki-fileserver01
+Account: fileadmin
+RemoteIP: 10.10.1.204 (source: azuki-sl)
+```
+
+This aligns perfectly with the scenario briefing:
+
+attackers target file servers due to the high concentration of sensitive data
+
+### Analysis & Interpretation
+
+Key findings from this event:
+
+- The attacker moved from workstation → high-value server
+
+- The compromised account already had administrative privileges
+
+- RDP activity strongly suggests interactive operator control
+
+- The adversary immediately began exploring valuable data stores
+
+This confirms compromise of the business file server.
+
+### Why This Matters
+
+- Provides insight into target selection and intent
+
+- Confirms that the attacker can access confidential files
+
+- Represents a material escalation of risk
+
+- Establishes the next foothold in the kill chain
+
+### MITRE ATT&CK Mapping
+
+- TA0008 — Lateral Movement
+
+- Remote Services: T1021
+
+### Final Flag Answer
+
+` azuki-fileserver01`
+
+## FLAG 3 — LATERAL MOVEMENT: Compromised Administrator Account
+
+### Objective
+
+Identify which administrator account the attacker leveraged to log into the file server and continue the intrusion.
+
+###
