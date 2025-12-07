@@ -1273,7 +1273,7 @@ DeviceProcessEvents
 
 One compression event stood out:
 
-<img width="1487" height="867" alt="10 168 27 1" src="https://github.com/user-attachments/assets/8d6e21c9-7ec6-44d2-b8e9-f368be9fa97e" />
+<img width="558" height="125" alt="Screenshot 2025-12-07 151000" src="https://github.com/user-attachments/assets/5a35b3d2-b07b-4f40-ae4b-ff9c5b8d5e7e" />
 
 
 ```
