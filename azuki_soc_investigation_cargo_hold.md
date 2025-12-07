@@ -45,7 +45,7 @@ This report documents each phase of the intrusion and the analytical steps taken
 
 ---
 
-## TIMELINE OF ATTACKER ACTIVITY
+# TIMELINE OF ATTACKER ACTIVITY
 
 This timeline consolidates attacker behaviors observed across MDE telemetry. Each entry represents a confirmed activity tied to a specific phase of the intrusion.
 
@@ -194,3 +194,73 @@ File Deleted: ConsoleHost_history.txt
 Technique: Clear Command History (T1070.003)
 
 ---
+
+# EXECUTIVE SUMMARY
+
+The Cargo Hold hunt provided telemetry from a live intrusion against Azuki Import/Export (梓貿易株式会社). Using only Microsoft Defender for Endpoint Advanced Hunting logs, this investigation successfully identified:
+
+- The attacker’s return infrastructure
+
+- Lateral movement to a file server
+
+- Discovery of network resources and permissions
+
+- Credential harvesting from LSASS memory
+
+- Collection and staging of sensitive data
+
+- Compression and exfiltration to a cloud service
+
+- Setup of persistence, masquerading as legitimate components
+
+- Cleanup actions designed to hinder forensic review
+
+--- 
+
+### Key Findings
+
+| Category                 | Confirmed Findings                                                |
+| ------------------------ | ----------------------------------------------------------------- |
+| **Initial Access**       | Adversary re-entered via external IP (**159.26.106.98**)          |
+| **Privilege Abuse**      | Compromised admin account: **fileadmin**                          |
+| **High-Value Targeting** | File server accessed: **azuki-fileserver01**                      |
+| **Credential Theft**     | LSASS dumped to `C:\Windows\Logs\CBS\lsass.dmp`                   |
+| **Staging Location**     | Hidden directory: `C:\Windows\Logs\CBS\`                          |
+| **Data Theft**           | Archive exfiltrated via **file.io** using `curl`                  |
+| **Persistence**          | Registry autorun value: **FileShareSync** executing `svchost.ps1` |
+| **Anti-Forensics**       | PowerShell history deleted (`ConsoleHost_history.txt`)            |
+
+---
+
+### Analyst Capabilities Demonstrated
+
+| Skill Area               | Demonstration                                            |
+| ------------------------ | -------------------------------------------------------- |
+| Endpoint threat hunting  | Correlating multi-host attacker activity using MDE       |
+| Log-driven investigation | Full kill-chain reconstruction from telemetry alone      |
+| MITRE ATT&CK mapping     | 20 distinct techniques identified & aligned              |
+| IOC extraction           | IPs, commands, filenames, registry values, staging paths |
+| Forensics awareness      | Recognition of persistence and anti-forensic evidence    |
+| Reporting quality        | Structured narrative suitable for SOC leadership         |
+
+---
+
+### Adversary Intent Assessment
+
+The adversary’s actions indicate:
+
+- Integrity & Confidentiality loss involving privileged credentials
+
+- Targeted collection of sensitive business data
+
+- Efforts to remain persistent and stealthy within the environment
+
+- Ability to destroy evidence and hinder IR reconstruction
+
+---
+
+# Flag by Flag Detail
+
+## FLAG 1 — INITIAL ACCESS: Return Connection Source
+
+
