@@ -1219,7 +1219,7 @@ It marks the transition from access to actual data theft in progress.
 
 ### MITRE ATT&CK Mapping
 
-| Phase      | Technique            | ID            |
+| Technique Category | Technique            | ID            |
 | ---------- | -------------------- | ------------- |
 | Collection | Automated Collection | **T1119**     |
 | Collection | Local Data Staging   | **T1074.001** |
@@ -1327,6 +1327,101 @@ This file represents the highest-impact loss in the breach.
 ### Final Flag Answer
 
 `"tar.exe" -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .`
+
+---
+
+### FLAG 14 — CREDENTIAL ACCESS: Renamed Credential Dumping Tool
+
+### Objective
+
+Identify the renamed executable used by the attacker to perform credential dumping — a common OPSEC tactic to bypass signature-based detections.
+
+### Investigation Approach
+
+Credential dumping was the attacker’s next strategic step, following:
+
+- Successful privilege validation (`whoami /all`)
+- Collection of sensitive network share data
+- Compression of stolen files (`credentials.tar.gz`)
+
+We pivoted into:
+
+- `DeviceFileEvents` — file creation in suspicious paths
+- `DeviceProcessEvents` — process execution around credential theft timing
+
+Expected artifacts:
+
+- A binary dropped into the hidden staging directory
+- Name that does not resemble Mimikatz or other known credential tools
+
+### Query Used
+
+```
+DeviceFileEvents
+| where DeviceName contains "azuki-fileserver01"
+| where FolderPath contains @"C:\Windows\Logs\CBS"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where FileName contains "exe"
+| project Timestamp,ActionType, DeviceName, InitiatingProcessAccountName, FileName, FolderPath
+```
+
+This revealed an unusual binary with a short, ambiguous filename.
+
+### Evidence Observed
+
+A credential-theft tool was staged as:
+
+<img width="773" height="91" alt="image" src="https://github.com/user-attachments/assets/a32a3366-5b4b-44ad-bbd2-d7d99a7334f3" />
+
+
+```
+File: pd.exe
+Location: C:\Windows\Logs\CBS\
+Behavior: Later executed against LSASS (Flag 15)
+```
+
+Short names like `pd.exe` are intentionally vague — designed to blend in and be misinterpreted as a system component or utility.
+
+### Analysis & Interpretation
+
+This is a classic masquerading and defense evasion tactic:
+
+| Risk Behavior                  | Impact                          |
+| ------------------------------ | ------------------------------- |
+| Renaming a malicious binary    | Evades IOC filename blocks      |
+| Locating tool in staged folder | Reduces script-based detections |
+| Executed by privileged user    | Enables full credential theft   |
+
+
+This strongly indicates the attacker was preparing for offline credential extraction.
+
+### Why This Matters
+
+This tool unlocks the crown jewels of Windows authentication:
+
+- Domain admin credentials
+- Service account credentials
+- Cached password hashes
+
+Once stolen, attackers can:
+
+- Re-enter at will
+- Expand to additional servers
+- Authenticate as trusted users
+
+This is one of the most damaging actions in the intrusion.
+
+### MITRE ATT&CK Mapping
+
+| Technique Category | Technique                             | ID            |
+| ------------------ | ------------------------------------- | ------------- |
+| Defense Evasion    | Masquerading: Rename System Utilities | **T1036.003** |
+| Credential Access  | OS Credential Dumping                 | **T1003**     |
+
+
+### Final Flag Answer
+
+`pd.exe`
 
 ---
 
