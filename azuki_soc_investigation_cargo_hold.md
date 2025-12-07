@@ -97,7 +97,7 @@ Device: azuki-fileserver01 — Account: fileadmin
 
 12:55:43 AM
 
-Command: attrib +h +s C:\Windows\Logs\CBS
+Command: ``` attrib +h +s C:\Windows\Logs\CBS ```
 
 Purpose: Hide staging folder
 
