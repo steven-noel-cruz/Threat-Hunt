@@ -1425,3 +1425,99 @@ This is one of the most damaging actions in the intrusion.
 
 ---
 
+## FLAG 15 — CREDENTIAL ACCESS: Memory Dump Command
+
+### Objective
+
+Document the full command line the attacker used to perform a process memory dump of LSASS, enabling credential extraction.
+
+### Investigation Approach
+
+After identifying the renamed tool pd.exe (Flag 14), the next step was to:
+
+- Confirm how it was executed
+- Verify that it targeted LSASS
+- Capture the output location of the resulting memory dump
+
+We focused on:
+
+- `DeviceProcessEvents` for executions of `pd.exe`
+- `DeviceFileEvents` for creation of `lsass.dmp` in the staging directory
+
+### Query Used
+
+Process execution:
+```
+DeviceProcessEvents
+| where FileName =~ "pd.exe"
+| project Timestamp, DeviceName, AccountName, ProcessCommandLine
+| order by Timestamp asc
+```
+
+Resulting dump file:
+```
+DeviceFileEvents
+| where FileName == "lsass.dmp"
+| where FolderPath contains @"C:\Windows\Logs\CBS"
+| project Timestamp, DeviceName, AccountName, ActionType, FolderPath
+```
+### Evidence Observed
+
+<img width="432" height="93" alt="image" src="https://github.com/user-attachments/assets/adf403f8-7223-4ab1-94e6-12047ecd3103" />
+
+<img width="298" height="117" alt="image" src="https://github.com/user-attachments/assets/1405754f-bbdf-46ea-b699-92dfce256c7e" />
+
+
+The attacker executed `pd.exe` with flags consistent with Sysinternals-style tools:
+```
+Process Execution (from ProcessEvents)
+Command:
+"pd.exe" -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp
+Device: azuki-fileserver01
+Account: fileadmin
+```
+Shortly afterward, a file was created:
+```
+File Creation (from FileEvents)
+File: lsass.dmp
+Path: C:\Windows\Logs\CBS\lsass.dmp
+ActionType: FileCreated
+Device: azuki-fileserver01
+```
+The `-ma` flag indicates a full memory dump, and `876` corresponds to the LSASS process ID at that time.
+
+### Analysis & Interpretation
+
+This confirms:
+
+- `pd.exe` was used as a credential dumping tool
+- The target process was LSASS — the core Windows authentication component
+- Output was saved directly into the hidden staging directory alongside other stolen data
+
+Dumping LSASS enables extraction of:
+
+- Password hashes
+- Kerberos tickets
+- Cached interactive logons
+- Service account secrets
+
+This gives the attacker deep lateral movement capability beyond this single host.
+
+### Why This Matters
+
+This is one of the highest-severity events in the entire intrusion:
+
+- Grants attacker domain-wide access if privileged creds are present
+- Supports long-term persistence, even if initial footholds are cleaned up
+- Provides material for offline cracking and replay attacks
+
+In a real environment, this would trigger immediate incident escalation.
+
+### MITRE ATT&CK Mapping
+
+| Technique Category | Technique                           | ID            |
+| ------------------ | ----------------------------------- | ------------- |
+| Credential Access  | OS Credential Dumping: LSASS Memory | **T1003.001** |
+
+### Final Flag Answer
+` pd -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp `
