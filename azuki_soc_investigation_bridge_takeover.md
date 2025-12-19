@@ -2,7 +2,7 @@
 
 **Analyst:** Steven Cruz  
 **Source:** Cyber Range SOC Challenge  
-**System:** azuki-fileserver01
+**System:** azuki-adminpc
 
 ---
 
