@@ -213,3 +213,70 @@ Throughout the investigation:
 The result is an investigation that is **reproducible**, **defensible**, and suitable for both operational response and post-incident reporting.
 
 ---
+
+##  Attack Chain Overview
+
+This section provides a high-level view of the attacker’s progression during the **Bridge Takeover** incident. Rather than focusing on individual commands or indicators, it illustrates **how discrete actions combined into a cohesive intrusion**, moving from access to impact.
+
+The attacker leveraged **existing trust, native tooling, and legitimate services** to avoid detection, prioritizing stealth and reliability over noisy exploitation.
+
+### Kill Chain Progression (Summary)
+
+1. **Lateral Movement**  
+   Pivoted from a previously compromised system into an executive administrative workstation using valid credentials.
+
+2. **Execution**  
+   Downloaded and extracted malicious tooling using native command-line utilities and rotated external infrastructure.
+
+3. **Persistence**  
+   Established redundant access through a C2 implant, named pipe communication, and a backdoor administrator account.
+
+4. **Discovery**  
+   Enumerated sessions, domain trusts, network connections, and credential storage locations to identify high-value targets.
+
+5. **Collection**  
+   Staged sensitive business and credential data in a hidden system directory and prepared it for exfiltration.
+
+6. **Exfiltration**  
+   Uploaded archived data to anonymous cloud file-sharing services over HTTPS.
+
+7. **Credential Access**  
+   Extracted browser credentials and password manager secrets, enabling long-term compromise beyond the initial environment.
+
+
+###  Kill Chain Diagram
+
+```
+flowchart LR
+    A[Existing Foothold<br/>(from prior breach)]
+    --> B[Lateral Movement<br/>Valid Accounts]
+
+    B --> C[Execution<br/>Payload Download & Extraction]
+
+    C --> D[Persistence<br/>C2 + Backdoor Account]
+
+    D --> E[Discovery<br/>Sessions, Trusts, Network, Files]
+
+    E --> F[Collection<br/>Data Staging & Archiving]
+
+    F --> G[Exfiltration<br/>Cloud File Uploads]
+
+    G --> H[Credential Access<br/>Browser & Password Manager]
+
+    style B fill:#ffcccc
+    style D fill:#ffd9b3
+    style F fill:#fff2cc
+    style G fill:#d9ead3
+```
+
+### Key Observations
+
+- No exploits were required — the attack relied entirely on **trust abuse and legitimate tooling**
+- Each stage **enabled the next**, demonstrating deliberate planning
+- The attack only became clearly malicious **late in the chain**, after persistence and discovery were complete
+
+This progression highlights why early detection of **credential misuse, encoded commands, and anomalous administrative behavior** is critical to preventing business-impacting incidents.
+
+---
+
+## 
