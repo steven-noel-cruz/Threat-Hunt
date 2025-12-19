@@ -255,10 +255,7 @@ flowchart LR
     E --> F[Collection<br/>Data Staging & Archiving]
     F --> G[Exfiltration<br/>Cloud File Uploads]
     G --> H[Credential Access<br/>Browser & Password Manager]
-    style B fill:#ffcccc
-    style D fill:#ffd9b3
-    style F fill:#fff2cc
-    style G fill:#d9ead3
+
 ```
 
 ### Key Observations
