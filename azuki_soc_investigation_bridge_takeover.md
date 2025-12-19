@@ -947,41 +947,357 @@ This behavior significantly increased the potential impact of the compromise and
 
 ---
 
-### 🚩 Flag 17: Collection — Data Staging Directory
+###  Flag 17: Collection — Data Staging Directory
 
 **Objective**  
-Identify the directory used by the attacker to stage collected data prior to exfiltration. Staging directories are critical forensic artifacts that reveal attacker workflow and data handling practices.
+Identify the directory used by the attacker to stage collected data prior to archiving and exfiltration. Staging directories provide critical insight into attacker workflow and data handling.
 
 **Evidence Observed**  
-File system telemetry revealed the creation and use of a directory within a legitimate-looking Windows system path that was repeatedly referenced during data collection and preparation activities.
+After identifying attacker interaction with sensitive data in the user’s Documents directory, the investigation pivoted to identifying **where that data was being aggregated**. File system and process telemetry revealed repeated references to a single directory within a legitimate-looking Windows system path.
 
 **KQL Used (MDE Advanced Hunting):**  
-DeviceFileEvents  
+```
+DeviceProcessEvents  
 | where DeviceName == "azuki-adminpc"  
-| where FolderPath has @"C:\ProgramData\Microsoft\Crypto"  
-| where ActionType in ("FolderCreated","FileCreated","FileModified")  
-| project Timestamp, ActionType, FileName, FolderPath  
-| order by Timestamp asc  
-
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where InitiatingProcessAccountName == "yuki.tanaka"  
+| where ProcessCommandLine has @"C:\Users\yuki.tanaka\Documents\"  
+| where FileName in ("Robocopy.exe","xcopy.exe","cmd.exe","powershell.exe")  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, InitiatingProcessRemoteSessionIP, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+```
 **Key observations:**
 - Staging directory identified: `C:\ProgramData\Microsoft\Crypto\staging`
-- Directory mimics a legitimate Windows cryptographic service path
-- Multiple file creation and modification events occurred within this directory
-- Directory usage began after discovery activities completed
+- Directory path closely resembles legitimate Windows cryptographic service locations
+- Directory repeatedly referenced as the destination for copied user data
+- Activity occurred during an active RemoteInteractive session
 
 **Analysis**  
-The directory `C:\ProgramData\Microsoft\Crypto\staging` was identified as the attacker’s data staging location. By placing staged data within a path that resembles legitimate Windows cryptographic service directories, the attacker reduced the likelihood of raising suspicion during casual inspection or automated monitoring.
+The directory `C:\ProgramData\Microsoft\Crypto\staging` was identified as the attacker’s centralized data staging location. By selecting a path that mimics legitimate Windows cryptographic service directories, the attacker reduced the likelihood of detection during routine inspection or automated monitoring.
 
-The repeated creation and modification of files within this directory, following extensive discovery activity, strongly indicates its use as a centralized collection point for sensitive data prior to archiving and exfiltration.
-
-Identifying this staging directory was a key turning point in the investigation, as it enabled defenders to:
-- Scope the volume of collected data
-- Identify subsequent archive creation
-- Correlate staging activity with exfiltration events
+This directory served as the aggregation point for sensitive data copied from the user’s Documents directory, confirming its role as a preparatory step prior to archiving and exfiltration. Identifying this staging location was critical for scoping the volume of collected data and correlating subsequent archive creation and outbound transfer activity.
 
 **MITRE ATT&CK Mapping**
 - **Tactic:** Collection  
 - **Technique:** T1074.001 — Data Staged: Local Data Staging
 
 **Evidence Screenshot**  
-/images/flag17_data_staging_directory.png
+<img width="1623" height="165" alt="image" src="https://github.com/user-attachments/assets/b7a782c0-6aa2-404f-bc4e-ccf200825576" />
+
+---
+
+###  Flag 18: Collection — Automated Data Collection Command
+
+**Objective**  
+Identify the command used by the attacker to automate bulk collection of sensitive data. Automated collection enables efficient harvesting of large data sets while minimizing manual interaction.
+
+**Evidence Observed**  
+After identifying the attacker’s data staging directory, the investigation focused on determining **how data was moved into that location**. Process execution telemetry referencing the user’s Documents directory revealed repeated bulk copy operations.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where InitiatingProcessAccountName == "yuki.tanaka"  
+| where ProcessCommandLine has @"C:\Users\yuki.tanaka\Documents\"  
+| where FileName == "Robocopy.exe"  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Repeated execution of `Robocopy.exe`
+- Bulk copying of multiple business-related directories
+- Source directories included Banking, Tax-Records, QuickBooks, and Contracts
+- Destination paths consistently pointed to `C:\ProgramData\Microsoft\Crypto\staging\`
+- Commands executed during an active RemoteInteractive session
+
+**Analysis**  
+The attacker used `Robocopy.exe` to perform automated, recursive copying of sensitive user data into the staging directory. The command was executed multiple times to target specific business-related folders, indicating a structured approach to data collection rather than opportunistic access.
+
+The use of reliability-focused flags (`/E`, `/R:1`, `/W:1`, `/NP`) suggests the attacker intended to ensure complete data transfer while minimizing noise and retry delays. Leveraging a native Windows utility allowed the activity to blend with legitimate administrative behavior.
+
+This step confirms the attacker’s transition from discovery into **systematic data collection**, preparing the environment for subsequent archiving and exfiltration.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Collection  
+- **Technique:** T1119 — Automated Collection
+
+**Evidence Screenshot**  
+<img width="1623" height="165" alt="image" src="https://github.com/user-attachments/assets/b7a782c0-6aa2-404f-bc4e-ccf200825576" />
+
+--
+
+### 🚩 Flag 19: Collection — Exfiltration Volume
+
+**Objective**  
+Quantify the number of archives prepared for exfiltration. Measuring archive volume helps determine the scope of data theft and supports impact assessment.
+
+**Evidence Observed**  
+After identifying automated data collection into the staging directory, the investigation pivoted to identifying **archive creation activity** within that location. File telemetry revealed multiple compressed files created in preparation for outbound transfer.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceFileEvents  
+| where DeviceName == "azuki-adminpc"  
+| where FolderPath startswith @"C:\ProgramData\Microsoft\Crypto\staging"  
+| where FileName has_any (".7z",".zip",".tar",".gz")  
+| project Timestamp, DeviceName, FileName, FolderPath
+```
+**Key observations:**
+- Total archives created: **8**
+- Archives created within the staging directory
+- Compression occurred after automated data collection completed
+- Archive filenames were unique, indicating segmented data packaging
+
+**Analysis**  
+Eight distinct archives were created within the staging directory, indicating the attacker segmented collected data into multiple packages prior to exfiltration. Segmenting archives can improve transfer reliability, reduce the risk of total data loss during interrupted uploads, and allow selective re-exfiltration if needed.
+
+The timing of archive creation, following structured data collection and staging, confirms a deliberate workflow consistent with mature data theft operations.
+
+Quantifying archive volume provides defenders with a measurable indicator of impact and helps prioritize response actions related to data exposure and notification requirements.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Collection  
+- **Technique:** T1560.001 — Archive Collected Data
+
+**Evidence Screenshot**  
+<img width="1096" height="277" alt="image" src="https://github.com/user-attachments/assets/199d9073-301b-490c-9db5-6bd5b5500382" />
+
+---
+
+###  Flag 20: Credential Access — Credential Theft Tool Download
+
+**Objective**  
+Identify the command used by the attacker to download a credential theft tool. Downloading specialized tooling indicates a shift toward harvesting credentials beyond those already discovered on disk.
+
+**Evidence Observed**  
+Process execution telemetry revealed additional outbound file download activity after data collection and archiving were completed. The attacker reused previously established external hosting infrastructure to retrieve credential theft tooling.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where FileName == "curl.exe"  
+| where ProcessCommandLine has "catbox"  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Download utility used: `curl.exe`
+- Archive downloaded: `m-temp.7z`
+- Hosting service reused: `litter.catbox.moe`
+- Download occurred after data staging and archive creation
+
+**Analysis**  
+The attacker used `curl.exe`, a legitimate Windows command-line utility, to download an additional archive containing credential theft tooling. By reusing the same external hosting service observed earlier in the execution phase, the attacker demonstrated infrastructure reuse to maintain operational efficiency.
+
+The decision to download credential theft tooling after completing data collection suggests the attacker sought to **expand long-term access** by harvesting additional credentials, rather than relying solely on previously discovered plaintext files or password databases.
+
+This activity marks a transition from data-focused objectives to **credential-centric post-exploitation**, increasing the potential downstream impact of the intrusion.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Credential Access  
+- **Technique:** T1105 — Ingress Tool Transfer
+
+**Evidence Screenshot**  
+<img width="558" height="144" alt="image" src="https://github.com/user-attachments/assets/4bc8689c-00df-4409-bf67-1510cb738f2b" />
+
+---
+
+### Flag 21: Credential Access — Browser Credential Theft
+
+**Objective**  
+Identify the command used by the attacker to extract saved browser credentials. Browser credential stores are high-value targets because they often contain reusable passwords for internal and external services.
+
+**Evidence Observed**  
+Following the download of credential theft tooling, process execution telemetry showed execution of the tool with module-specific parameters targeting browser credential storage.
+
+**KQL Used (MDE Advanced Hunting):** 
+```
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where FileName in ("m.exe","mimikatz.exe")  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Credential theft tool executed: `m.exe`
+- DPAPI module targeted Chrome credential storage
+- Input file referenced Chrome `Login Data` database
+- Execution occurred after credential theft tooling was downloaded
+
+**Analysis**  
+The attacker executed the credential theft tool with the `dpapi::chrome` module to extract saved Google Chrome credentials from the local user profile. This technique leverages Windows DPAPI to decrypt stored browser credentials without interacting with LSASS, reducing the likelihood of triggering memory-dump–focused detections.
+
+Targeting browser credential stores allowed the attacker to harvest credentials for web applications, cloud services, and internal portals, significantly expanding the potential impact of the compromise.
+
+This behavior demonstrates a deliberate focus on **credential longevity**, enabling access persistence beyond the compromised host itself.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Credential Access  
+- **Technique:** T1555.003 — Credentials from Web Browsers
+
+**Evidence Screenshot (Placeholder)**  
+<img width="931" height="157" alt="image" src="https://github.com/user-attachments/assets/927c31be-66e1-4d19-b5d9-cae1be012466" />
+
+---
+
+### Flag 22: Exfiltration — Data Upload Command
+
+**Objective**  
+Identify the command used to exfiltrate collected data from the environment. Understanding the exact exfiltration mechanism enables defenders to detect, block, and investigate similar activity.
+
+**Evidence Observed**  
+After archive creation and credential harvesting, network-aware process execution telemetry revealed outbound HTTP POST requests consistent with file upload activity.
+
+**KQL Used (MDE Advanced Hunting):**  
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where FileName == "curl.exe"  
+| where ProcessCommandLine has_any ("-X POST","-F")  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+
+**Key observations:**
+- HTTP client used: `curl.exe`
+- Exfiltration method: HTTP POST with form-based file upload
+- Archive uploaded: `credentials.tar.gz`
+- Upload destination was an external file hosting service
+
+**Analysis**  
+The attacker used `curl.exe` to perform an HTTP POST request containing a form-based file upload. This technique allows large files to be transferred reliably while blending with legitimate web traffic.
+
+By leveraging HTTPS-based uploads to a legitimate file hosting service, the attacker avoided the need for custom C2 infrastructure and reduced the likelihood of detection by perimeter security controls.
+
+This activity marks the transition from internal data handling to **active data exfiltration**, representing a critical point of business impact.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Exfiltration  
+- **Technique:** T1567 — Exfiltration Over Web Service
+
+**Evidence Screenshot**  
+<img width="1220" height="258" alt="image" src="https://github.com/user-attachments/assets/ec7426cb-fb90-427a-8f8a-15dd1b46d86e" />
+
+---
+
+###  Flag 23: Exfiltration — Cloud Storage Service
+
+**Objective**  
+Identify the cloud storage service used by the attacker to receive exfiltrated data. Knowing the service enables defenders to apply domain-based blocking and enrich threat intelligence.
+
+**Evidence Observed**  
+Review of the data upload command identified an external cloud storage service being used as the destination for the exfiltrated archive.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceNetworkEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where RemoteUrl has "gofile"  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, RemoteUrl, RemoteIP  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Cloud storage service identified: `gofile.io`
+- Service supports anonymous, temporary file hosting
+- Commonly abused for malware distribution and data exfiltration
+- Activity aligned with previously observed upload commands
+
+**Analysis**  
+The domain `gofile.io` was identified as the cloud storage service used to receive exfiltrated data. This service provides anonymous file uploads and temporary storage links, making it attractive for attackers seeking to minimize attribution and persistence of stolen data.
+
+Using a legitimate cloud storage provider allowed the attacker to blend exfiltration traffic with normal web activity, complicating detection and response efforts.
+
+Identifying the exfiltration service provides defenders with a clear opportunity for domain-based blocking, retrospective traffic analysis, and threat intelligence correlation.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Exfiltration  
+- **Technique:** T1567.002 — Exfiltration to Cloud Storage
+
+**Evidence Screenshot**  
+<img width="314" height="146" alt="image" src="https://github.com/user-attachments/assets/3ff8b963-420d-418c-b796-edf695f9dcce" />
+
+---
+
+###  Flag 24: Exfiltration — Destination Server IP
+
+**Objective**  
+Identify the IP address of the server receiving exfiltrated data. IP-level indicators enable network-layer blocking and support threat intelligence correlation when domain-based controls are bypassed.
+
+**Evidence Observed**  
+Network telemetry correlated outbound connections to the previously identified cloud storage service with a specific remote IP address during the data upload window.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceNetworkEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where RemoteUrl has "gofile"  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, RemoteUrl, RemoteIP  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Exfiltration server IP identified: `45.112.123.227`
+- IP associated with the cloud storage service backend
+- Connections occurred during active data upload activity
+- IP-level indicator remained consistent across sessions
+
+**Analysis**  
+The IP address `45.112.123.227` was identified as the backend server receiving exfiltrated data. While the attacker leveraged a legitimate cloud storage domain, resolving and capturing the destination IP provides defenders with an additional enforcement point beyond domain-based controls.
+
+IP-level indicators are particularly valuable in environments where DNS-based blocking is unavailable, delayed, or circumvented. This finding enables defenders to perform retrospective traffic analysis and implement temporary containment measures during active response.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Exfiltration  
+- **Technique:** T1041 — Exfiltration Over C2 Channel
+
+**Evidence Screenshot**  
+<img width="314" height="146" alt="image" src="https://github.com/user-attachments/assets/3ff8b963-420d-418c-b796-edf695f9dcce" />
+
+---
+
+### 🚩 Flag 25: Credential Access — Master Password Extraction
+
+**Objective**  
+Identify the final credential artifact recovered by the attacker that enabled access to an encrypted password database. Master passwords represent a critical escalation point, as they unlock multiple stored credentials at once.
+
+**Evidence Observed**  
+File system telemetry revealed access to a plaintext file containing a password associated with a previously identified password management database.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceFileEvents  
+| where DeviceName == "azuki-adminpc"  
+| where FileName has "KeePass"  
+| where FileName contains "txt" 
+| project Timestamp, DeviceName, ActionType, FileName, FolderPath  
+| order by Timestamp desc  
+```
+**Key observations:**
+- Credential file identified: `KeePass-Master-Password.txt`
+- File name explicitly references a password manager master password
+- File accessed after browser credential theft activity
+- File presence correlates with previously discovered `.kdbx` databases
+
+**Analysis**  
+The file `KeePass-Master-Password.txt` was identified as containing the master password for a KeePass credential database previously discovered during the investigation. Possession of this password allowed the attacker to decrypt the entire password database, granting access to all credentials stored within it.
+
+This represents the **highest-impact credential access event** in the intrusion. Unlike individual browser passwords, a KeePass master password can unlock credentials for numerous internal systems, external services, and privileged accounts.
+
+The recovery of this artifact confirms that the attacker achieved comprehensive credential compromise, extending the potential impact of the incident well beyond the initially compromised host.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Credential Access  
+- **Technique:** T1555.005 — Credentials from Password Stores
+
+**Evidence Screenshot (Placeholder)**  
+<img width="614" height="146" alt="image" src="https://github.com/user-attachments/assets/f9272777-4699-4639-9e7b-c315f535f043" />
+
+---
+
+
+
