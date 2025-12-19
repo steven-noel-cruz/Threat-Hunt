@@ -308,6 +308,7 @@ Analysis of **RemoteInteractive** logon events across Azuki systems revealed rep
 DeviceLogonEvents
 | where DeviceName == "azuki-adminpc"
 | where RemoteIP != "" and RemoteDeviceName startswith "azuki"
+| project Timestamp, DeviceName, ActionType, LogonType, AccountName, RemoteDeviceName, RemoteIP
 | sort by Timestamp desc
 ```
 
@@ -351,6 +352,7 @@ RemoteInteractive logon events showed repeated use of a single user account acro
 DeviceLogonEvents
 | where DeviceName == "azuki-adminpc"
 | where RemoteIP != "" and RemoteDeviceName startswith "azuki"
+| project Timestamp, DeviceName, ActionType, LogonType, AccountName, RemoteDeviceName, RemoteIP
 | sort by Timestamp desc
 ```
 **Key observations:**
@@ -387,12 +389,11 @@ RemoteInteractive logon events originating from the previously identified source
 
 **KQL Used (MDE Advanced Hunting):**  
 ```
-DeviceLogonEvents  
-| where DeviceName contains "azuki"  
-| where LogonType has "RemoteInteractive"  
-| where RemoteIP == "10.1.0.204"  
-| summarize LogonCount = count() by DeviceName  
-| order by LogonCount desc  
+DeviceLogonEvents
+| where DeviceName == "azuki-adminpc"
+| where RemoteIP != "" and RemoteDeviceName startswith "azuki"
+| project Timestamp, DeviceName, ActionType, LogonType, AccountName, RemoteDeviceName, RemoteIP
+| sort by Timestamp desc 
 ```
 **Key observations:**
 - Target device: `azuki-adminpc`
@@ -415,6 +416,91 @@ This finding confirms that the attacker’s objective extended beyond persistenc
 <img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
 
 ---
+
+### 🚩 Flag 4: Execution — Payload Hosting Service
+
+**Objective**  
+Identify the external file hosting service used by the attacker to stage and deliver malicious payloads. Documenting attacker infrastructure enables blocking, threat intelligence enrichment, and detection tuning.
+
+**Evidence Observed**  
+Network telemetry revealed outbound connections from the compromised administrative system to an external file hosting service during the malware download phase.
+
+**KQL Used (MDE Advanced Hunting):** 
+```  
+DeviceNetworkEvents
+| where DeviceName == "azuki-adminpc"
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"
+| where InitiatingProcessCommandLine contains "curl.exe" or InitiatingProcessCommandLine contains "powershell"
+| where RemoteUrl != ""
+| sort by Timestamp desc 
+```
+**Key observations:**
+- External hosting domain identified: `litter.catbox.moe`
+- Connections occurred during the execution phase
+- Hosting service differed from infrastructure used in earlier hunts
+- Domain is consistent with short-lived, anonymous file hosting
+
+**Analysis**  
+The domain `litter.catbox.moe` was identified as the payload hosting service used to stage malicious archives. This service is commonly abused for temporary file storage and allows attackers to rapidly rotate infrastructure, reducing the effectiveness of static domain blocklists.
+
+The use of a new hosting service compared to previous phases of the Azuki Breach Saga indicates deliberate **infrastructure rotation**, a technique used to evade detection and attribution while maintaining operational continuity.
+
+Identifying the payload hosting service provides defenders with an actionable indicator for:
+- Network-level blocking
+- Retrospective threat hunting
+- Detection engineering improvements
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Execution  
+- **Technique:** T1608.001 — Stage Capabilities: Upload Malware
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1565" height="137" alt="image" src="https://github.com/user-attachments/assets/e595bc5d-5bbd-42a6-9cf0-641ecf0cc9e7" />
+
+---
+
+### 🚩 Flag 5: Execution — Malware Download Command
+
+**Objective**  
+Identify the exact command used to download the malicious archive. Capturing the full command line provides insight into attacker tradecraft and supports command-line–based detections.
+
+**Evidence Observed**  
+Process execution telemetry on the compromised administrative system showed use of a native command-line utility to retrieve a remote file masquerading as a legitimate Windows update.
+
+**KQL Used (MDE Advanced Hunting):**  
+```  
+DeviceNetworkEvents
+| where DeviceName == "azuki-adminpc"
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"
+| where InitiatingProcessCommandLine contains "curl.exe" or InitiatingProcessCommandLine contains "powershell"
+| where RemoteUrl != ""
+| sort by Timestamp desc 
+```
+
+**Key observations:**
+- Utility used: `curl.exe`
+- Download destination: `C:\Windows\Temp\cache\KB5044273-x64.7z`
+- Filename mimics a legitimate Windows security update
+- Payload retrieved from previously identified hosting infrastructure
+
+**Analysis**  
+The attacker used `curl.exe`, a legitimate Windows utility, to download a malicious archive directly to a system cache directory. The archive filename was crafted to resemble a Windows knowledge base update, a common masquerading technique intended to reduce suspicion during casual inspection.
+
+Using native tooling for payload retrieval allowed the attacker to blend malicious activity with routine administrative behavior, bypassing simple allowlisting controls and reducing the likelihood of immediate detection.
+
+This command represents the transition from access to **active execution**, marking a critical escalation in the intrusion.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Execution  
+- **Technique:** T1105 — Ingress Tool Transfer
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
+
+---
+
+
+
 
 
 
