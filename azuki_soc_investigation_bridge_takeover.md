@@ -1260,7 +1260,7 @@ IP-level indicators are particularly valuable in environments where DNS-based bl
 
 ---
 
-### 🚩 Flag 25: Credential Access — Master Password Extraction
+###  Flag 25: Credential Access — Master Password Extraction
 
 **Objective**  
 Identify the final credential artifact recovered by the attacker that enabled access to an encrypted password database. Master passwords represent a critical escalation point, as they unlock multiple stored credentials at once.
@@ -1294,10 +1294,146 @@ The recovery of this artifact confirms that the attacker achieved comprehensive 
 - **Tactic:** Credential Access  
 - **Technique:** T1555.005 — Credentials from Password Stores
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="614" height="146" alt="image" src="https://github.com/user-attachments/assets/f9272777-4699-4639-9e7b-c315f535f043" />
 
 ---
 
+## 🧾 Final Impact Summary
 
+The **Bridge Takeover** incident resulted in a comprehensive compromise of both **data confidentiality** and **credential security** within the Azuki Import/Export environment. By leveraging valid credentials, native tooling, and trusted cloud services, the attacker progressed from lateral movement to full administrative control without relying on exploit-based techniques.
+
+### Confirmed Impacts
+
+- **Administrative System Compromise**
+  - Successful lateral movement into `azuki-adminpc`, a high-value administrative workstation
+  - Establishment of multiple persistence mechanisms, including a C2 implant and backdoor administrator account
+
+- **Sensitive Data Exposure**
+  - Structured collection of business-critical data from user Documents directories
+  - Financial records, tax data, contracts, and accounting files staged and archived
+  - Creation of **eight distinct archives** prepared for exfiltration
+
+- **Credential Compromise**
+  - Discovery and access of plaintext password files
+  - Theft of saved browser credentials via DPAPI decryption
+  - Recovery of a KeePass **master password**, enabling decryption of an entire credential database
+
+- **Data Exfiltration**
+  - Successful exfiltration of staged archives using HTTPS-based uploads
+  - Abuse of legitimate cloud storage infrastructure (`gofile.io`)
+  - Identification of the backend exfiltration server IP (`45.112.123.227`)
+
+### Overall Assessment
+
+The attacker achieved:
+- Long-term access persistence
+- Broad credential exposure
+- Verified data theft with potential regulatory and business impact
+
+This incident represents a **high-severity compromise**, transitioning from endpoint intrusion to **enterprise-wide risk**, primarily due to credential reuse, plaintext password storage, and limited detection of trusted-tool abuse.
+
+---
+
+##  Detection & Mitigation Recommendations
+
+The following recommendations are derived directly from observed attacker behavior and are intended to reduce the likelihood and impact of similar intrusions.
+
+###  Credential Hygiene & Access Controls
+- Enforce **unique, complex passwords** and prohibit plaintext credential storage
+- Audit and remove legacy files containing passwords (`*.txt`, notes, documents)
+- Implement **credential vaulting** with enforced access controls
+- Require **multi-factor authentication (MFA)** for all administrative and remote access accounts
+
+###  Account & Privilege Monitoring
+- Alert on **local account creation** and **local Administrators group changes**
+- Regularly review local accounts for naming patterns that mimic legitimate users
+- Implement just-in-time (JIT) administration where possible
+
+###  Endpoint Detection Improvements
+- Monitor for **encoded PowerShell executions** (`-enc`, `-EncodedCommand`)
+- Detect execution of credential theft tooling (e.g., Mimikatz modules, DPAPI abuse)
+- Correlate **named pipe creation** with suspicious process execution
+- Alert on abuse of LOLBins such as `curl.exe`, `robocopy.exe`, and `7z.exe` outside normal administrative workflows
+
+###  Data Protection & Monitoring
+- Monitor access to high-value directories such as `Documents`, `Desktop`, and shared drives
+- Detect bulk file copy operations into unusual system directories
+- Alert on archive creation activity in non-standard locations
+
+###  Network & Exfiltration Controls
+- Implement egress filtering for known file-sharing services
+- Monitor outbound HTTPS POST requests with file upload patterns
+- Track destination IPs associated with cloud storage providers during active incidents
+- Perform retrospective network analysis following credential theft events
+
+###  Threat Hunting & Preparedness
+- Conduct routine threat hunts focused on:
+  - Valid account abuse
+  - Administrative session anomalies
+  - Credential access patterns
+- Maintain playbooks for post-compromise credential rotation
+- Periodically validate detection coverage against MITRE ATT&CK techniques observed in this incident
+
+---
+
+*Together, these measures address both the technical and procedural gaps exploited during the Bridge Takeover incident, reducing attacker dwell time and limiting business impact in future events.*
+
+---
+
+## 🧭 MITRE ATT&CK Heatmap Summary
+
+The following heatmap summarizes the attacker techniques observed throughout the **Bridge Takeover** incident, mapped across the MITRE ATT&CK framework. This visualization highlights the attacker’s heavy reliance on **valid credentials**, **living-off-the-land tooling**, and **credential-centric post-exploitation** rather than exploit-based intrusion.
+
+### ATT&CK Technique Coverage Overview
+
+| Tactic | Technique ID | Technique Name | Observed |
+|------|-------------|---------------|----------|
+| Initial Access | T1078 | Valid Accounts | 🔴 |
+| Execution | T1059 | Command and Scripting Interpreter | 🔴 |
+| Execution | T1105 | Ingress Tool Transfer | 🔴 |
+| Persistence | T1136.001 | Create Account: Local Account | 🔴 |
+| Persistence | T1078.003 | Valid Accounts: Local Accounts | 🔴 |
+| Privilege Escalation | T1078 | Valid Accounts | 🔴 |
+| Defense Evasion | T1027 | Obfuscated Files or Information | 🔴 |
+| Discovery | T1033 | System Owner/User Discovery | 🟠 |
+| Discovery | T1049 | System Network Connections Discovery | 🟠 |
+| Discovery | T1482 | Domain Trust Discovery | 🟠 |
+| Collection | T1074.001 | Data Staged: Local Data Staging | 🔴 |
+| Collection | T1119 | Automated Collection | 🔴 |
+| Collection | T1560.001 | Archive Collected Data | 🔴 |
+| Credential Access | T1552.001 | Credentials in Files | 🔴 |
+| Credential Access | T1555.003 | Credentials from Web Browsers | 🔴 |
+| Credential Access | T1555.005 | Credentials from Password Stores | 🔴 |
+| Exfiltration | T1567 | Exfiltration Over Web Service | 🔴 |
+| Exfiltration | T1567.002 | Exfiltration to Cloud Storage | 🔴 |
+| Exfiltration | T1041 | Exfiltration Over C2 Channel | 🟠 |
+
+### Heatmap Interpretation
+
+- 🔴 **High Confidence / Directly Observed**  
+  Technique was explicitly identified through telemetry and validated with supporting evidence.
+
+- 🟠 **Moderate Confidence / Supporting Activity**  
+  Technique inferred through correlated behavior and supporting command execution.
+
+### Key Observations
+
+- The intrusion heavily favored **credential abuse** over exploit development, indicating either prior access to valid credentials or a focus on stealth.
+- **Persistence and credential access** techniques were layered to ensure long-term access even if individual mechanisms were removed.
+- The attacker demonstrated a **mature collection and exfiltration workflow**, including staging, archiving, and segmented uploads.
+- Use of **legitimate tools and services** (PowerShell, robocopy, curl, cloud storage providers) allowed activity to blend into normal enterprise behavior.
+
+### Defensive Implications
+
+This heatmap reinforces the importance of:
+- Monitoring **valid account usage patterns**
+- Detecting **encoded command execution**
+- Auditing **credential storage practices**
+- Tracking **data movement from high-value directories**
+- Applying layered detection across the full kill chain rather than focusing solely on initial access
+
+---
+
+*This MITRE ATT&CK heatmap provides a concise, evidence-backed overview of attacker behavior and serves as a reference point for improving detection coverage and response readiness.*
 
