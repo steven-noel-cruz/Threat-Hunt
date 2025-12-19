@@ -44,3 +44,15 @@ The following data sources were available for analysis:
 
 
 No additional log sources (e.g., firewall logs, proxy logs, or packet captures) were available.
+
+### Investigation Constraints
+
+This threat hunt was intentionally limited to reflect realistic SOC conditions:
+
+- No direct endpoint access
+-  No PowerShell or command-line execution
+-   No file content inspection
+-    No memory or disk forensics
+-    No packet capture or network tap data
+
+All conclusions were drawn solely from telemetry and metadata, requiring behavioral analysis and correlation rather than artifact inspection.
