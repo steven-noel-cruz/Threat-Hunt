@@ -72,3 +72,35 @@ Due to these constraints:
     - Network communications
 
 If an action was not reflected in Defender telemetry, it was treated as out of scope for the investigation.
+
+### Why This Matters
+
+These constraints closely mirror real-world SOC investigations, where analysts often:
+
+- Lack direct system access
+- Must make decisions based on incomplete data
+- Rely on telemetry correlation rather than artifacts
+
+Successfully reconstructing the full attack lifecycle under these conditions demonstrates practical threat hunting and incident response capability, not just theoretical knowledge.
+
+---
+
+## Incident Scope & Objectives
+
+Bridge Takeover represents the third phase in the Azuki Breach Saga, following the events documented in Port of Entry and Cargo Hold. While earlier investigations focused on initial access and server-side compromise, this phase examines the attacker’s escalation into trusted administrative systems and their transition from access to control.
+
+### Incident Scope
+
+The scope of this investigation includes:
+
+* Activity occurring five days after the initial file server breach
+* Lateral movement from a previously compromised system into an executive administrative workstation
+* Post-compromise actions including:
+- Payload execution
+- Persistence establishment
+- Environment discovery
+- Data collection and staging
+- Data exfiltration
+- Credential harvesting
+
+The investigation intentionally excludes speculation about initial access techniques, as those were addressed in earlier phases of the series.
