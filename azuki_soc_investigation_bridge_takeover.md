@@ -96,11 +96,120 @@ The scope of this investigation includes:
 * Activity occurring five days after the initial file server breach
 * Lateral movement from a previously compromised system into an executive administrative workstation
 * Post-compromise actions including:
-- Payload execution
-- Persistence establishment
-- Environment discovery
-- Data collection and staging
-- Data exfiltration
-- Credential harvesting
+    - Payload execution
+    - Persistence establishment
+    - Environment discovery
+    - Data collection and staging
+    - Data exfiltration
+    - Credential harvesting
 
 The investigation intentionally excludes speculation about initial access techniques, as those were addressed in earlier phases of the series.
+
+### Investigation Objectives
+
+This hunt was designed to answer the following key questions:
+
+1. How did the attacker pivot into a high-value administrative system?
+
+    - Identify the source system, account, and target device involved in lateral movement.
+
+2. What persistence mechanisms were established to maintain access?
+
+    - Determine whether access survived credential resets or implant removal.
+
+3. What discovery actions were performed to understand the environment?
+
+    - Identify commands and tooling used to enumerate users, trusts, networks, and data locations.
+
+4. What data was collected and how was it staged?
+
+    - Locate staging directories and quantify the scope of collected data.
+
+5. How was data exfiltrated from the environment?
+
+    - Identify services, destinations, and volumes involved in exfiltration.
+
+6. What credentials were ultimately compromised?
+
+    - Determine whether browser credentials and password manager secrets were accessed.
+  
+### Why This Phase Matters
+
+This phase marks a strategic shift in the attacker’s behavior:
+
+- From opportunistic access → deliberate control
+- From single-system compromise → enterprise-level impact
+- From simple persistence → redundant, layered access mechanisms
+
+Understanding this transition is critical for defenders, as it reflects the point where an intrusion becomes a business-impacting incident rather than a contained security event.
+
+--- 
+
+## Investigation Methodology
+
+This investigation followed **a structured, kill-chain–driven threat hunting methodology**, aligned with SOC and DFIR best practices. Rather than searching for isolated indicators, analysis focused on behavioral progression, correlation, and validation across multiple telemetry sources.
+
+### Analytical Framework
+
+The investigation was guided by two primary frameworks:
+
+- **Cyber Kill Chain**
+    - Used to understand attacker progression from lateral movement through exfiltration and credential access.
+
+- **MITRE ATT&CK Framework**
+    - Used to map observed behaviors to known adversary techniques and ensure comprehensive coverage across tactics.
+
+Each finding was mapped to a specific **ATT&CK tactic and technique**, reinforcing both analytical rigor and reporting clarity.
+
+### Hunting Strategy
+
+Analysis was conducted using a **pivot-based approach**, starting from the scenario’s defined entry point and expanding outward only when supported by evidence.
+
+The general workflow followed this pattern:
+
+1. **Start with Identity and Access**
+   - Analyze logon activity to identify lateral movement
+   - Confirm source systems, target systems, and accounts involved
+
+2. **Pivot to Execution**
+   - Identify process executions tied to the compromised session
+   - Examine command-line arguments for intent and obfuscation
+
+3. **Validate Persistence**
+   - Look for mechanisms that would survive reboot or account reset
+   - Identify redundancy in attacker access paths
+
+4. **Expand into Discovery**
+   - Enumerate commands used to understand the environment
+   - Identify what the attacker was searching for and why
+
+5. **Confirm Collection and Exfiltration**
+   - Track file creation, staging, archiving, and upload activity
+   - Quantify the scope of data impacted
+
+6. **Assess Credential Impact**
+   - Identify credential harvesting techniques
+   - Determine downstream risk to additional systems
+  
+### Evidence Correlation
+No single data point was accepted in isolation. Findings were validated by correlating:
+
+- **Logon events** → user context and trust abuse  
+- **Process execution** → attacker intent and tooling  
+- **File events** → data staging and collection  
+- **Network events** → infrastructure use and exfiltration  
+
+This approach reduced false assumptions and ensured that each conclusion was supported by **multiple, independent telemetry sources**.
+
+
+### Documentation Discipline
+Throughout the investigation:
+
+- Queries were named descriptively and saved
+- Key timestamps were noted for timeline reconstruction
+- Commands were captured verbatim for IR reporting
+- Indicators of compromise were documented for remediation
+
+The result is an investigation that is **reproducible**, **defensible**, and suitable for both operational response and post-incident reporting.
+
+---
