@@ -56,3 +56,19 @@ This threat hunt was intentionally limited to reflect realistic SOC conditions:
 -    No packet capture or network tap data
 
 All conclusions were drawn solely from telemetry and metadata, requiring behavioral analysis and correlation rather than artifact inspection.
+
+### Analysis Approach Implications
+
+Due to these constraints:
+- Every indicator had to be observable in logs
+- Command intent was inferred from:
+        - Process command-line arguments
+        - Execution context
+        - Timing and sequence
+- Attack progression was reconstructed by correlating:
+        - Logon events
+        - Process execution chains
+        - File system activity
+        - Network communications
+
+If an action was not reflected in Defender telemetry, it was treated as out of scope for the investigation.
