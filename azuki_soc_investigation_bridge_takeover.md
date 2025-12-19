@@ -268,7 +268,7 @@ This progression highlights why early detection of **credential misuse, encoded 
 
 ---
 
-## 🚨 Detailed Findings — Flag-by-Flag Analysis
+##  Detailed Findings — Flag-by-Flag Analysis
 
 The following sections document the investigation findings **in the order they were uncovered**, corresponding directly to each flag in the *Bridge Takeover* challenge.
 
@@ -282,7 +282,7 @@ All findings are supported by **Microsoft Defender for Endpoint telemetry**, wit
 
 > **Note:** While flags are presented individually, they should be interpreted as part of a continuous attack narrative. Many findings build upon previous discoveries, reinforcing the importance of correlation over isolated indicators.
 
-### 🧩 Structure of Each Flag Section
+###  Structure of Each Flag Section
 
 Each flag analysis follows a consistent structure:
 
@@ -379,7 +379,7 @@ The reuse of valid credentials indicates:
 
 ---
 
-### 🚩 Flag 3: Lateral Movement — Target Device
+###  Flag 3: Lateral Movement — Target Device
 
 **Objective**  
 Identify the high-value system targeted during lateral movement. Determining the destination device clarifies what level of access the attacker achieved and what data was placed at risk.
@@ -417,7 +417,7 @@ This finding confirms that the attacker’s objective extended beyond persistenc
 
 ---
 
-### 🚩 Flag 4: Execution — Payload Hosting Service
+###  Flag 4: Execution — Payload Hosting Service
 
 **Objective**  
 Identify the external file hosting service used by the attacker to stage and deliver malicious payloads. Documenting attacker infrastructure enables blocking, threat intelligence enrichment, and detection tuning.
@@ -459,7 +459,7 @@ Identifying the payload hosting service provides defenders with an actionable in
 
 ---
 
-### 🚩 Flag 5: Execution — Malware Download Command
+###  Flag 5: Execution — Malware Download Command
 
 **Objective**  
 Identify the exact command used to download the malicious archive. Capturing the full command line provides insight into attacker tradecraft and supports command-line–based detections.
@@ -498,6 +498,85 @@ This command represents the transition from access to **active execution**, mark
 <img width="1565" height="137" alt="image" src="https://github.com/user-attachments/assets/e595bc5d-5bbd-42a6-9cf0-641ecf0cc9e7" />
 
 ---
+
+###  Flag 6: Execution — Archive Extraction Command
+
+**Objective**  
+Identify the command used to extract the downloaded password-protected archive. Understanding archive extraction behavior helps reveal how attackers bypass content inspection and application control mechanisms.
+
+**Evidence Observed**  
+Process execution telemetry showed the use of a legitimate compression utility to extract the contents of the previously downloaded archive into the same cache directory.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-adminpc"
+| where FileName contains "7z"
+| project Timestamp,DeviceName, FileName, ProcessCommandLine  
+| sort by Timestamp desc 
+```
+**Key observations:**
+- Compression utility used: `7z.exe`
+- Archive extracted: `KB5044273-x64.7z`
+- Archive was password-protected
+- Extraction output directory matched the download cache path
+- Extraction occurred shortly after archive download
+
+**Analysis**  
+The attacker used `7z.exe`, a commonly trusted compression utility, to extract a password-protected archive containing malicious tooling. Password protection prevents basic security controls from inspecting archive contents prior to extraction, allowing malicious files to evade detection until executed.
+
+By extracting the archive into the same cache directory used for staging, the attacker maintained a consistent workflow and reduced the likelihood of drawing attention through unusual file paths or behavior.
+
+This step completed the delivery phase and enabled subsequent execution of attacker-controlled payloads.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Execution  
+- **Technique:** T1140 — Deobfuscate/Decode Files
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1081" height="133" alt="image" src="https://github.com/user-attachments/assets/84c17ed6-6c74-4049-b51c-6e8b274be8b7" />
+
+---
+
+###  Flag 7: Persistence — C2 Implant
+
+**Objective**  
+Identify the command-and-control implant deployed by the attacker to maintain persistent access to the compromised system. Implant identification is critical for scoping compromise and ensuring complete remediation.
+
+**Evidence Observed**  
+File creation telemetry revealed the appearance of a new executable in the cache directory immediately following archive extraction.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceFileEvents
+| where DeviceName == "azuki-adminpc"
+| where InitiatingProcessCommandLine contains @"KB5044273-x64.7z"
+| project Timestamp,DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+| sort by Timestamp desc
+```
+
+**Key observations:**
+- Newly created executable: `meterpreter.exe`
+- File created shortly after archive extraction
+- File location aligned with previously used staging directory
+- Filename references known offensive security tooling
+
+**Analysis**  
+The executable `meterpreter.exe` was identified as the attacker’s command-and-control implant. Meterpreter is a well-known post-exploitation framework commonly used to establish interactive remote access to compromised systems.
+
+Placing the implant within an existing cache directory allowed the attacker to blend malicious artifacts with previously staged files, reducing the likelihood of detection through anomalous directory creation or path usage.
+
+The deployment of a dedicated C2 implant marked a shift from initial execution to **persistent control**, enabling the attacker to execute commands, deploy additional tooling, and maintain long-term access.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Persistence  
+- **Technique:** T1059 — Command and Scripting Interpreter
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1370" height="151" alt="image" src="https://github.com/user-attachments/assets/094b9341-6e33-4918-8e79-6692a78ceb7b" />
+
+---
+
 
 
 
