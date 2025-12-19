@@ -866,7 +866,7 @@ Network enumeration at this stage reflects a methodical effort to build situatio
 
 ---
 
-### 🚩 Flag 15: Discovery — Password Database Search
+###  Flag 15: Discovery — Password Database Search
 
 **Objective**  
 Identify how the attacker searched for password management databases within user directories. Password databases represent high-value targets because they may contain credentials for multiple systems.
@@ -875,12 +875,18 @@ Identify how the attacker searched for password management databases within user
 Process execution telemetry showed recursive file enumeration targeting password database file extensions within user profile directories.
 
 **KQL Used (MDE Advanced Hunting):**  
-DeviceProcessEvents  
+```
+| where Timestamp between (
+    datetime(2025-11-24T00:00:00.7943081Z)
+    ..
+    datetime(2025-11-26T00:00:00.7943081Z)
+)
 | where DeviceName == "azuki-adminpc"  
-| where ProcessCommandLine has_any ("where","dir")  
-| where ProcessCommandLine has ".kdbx"  
-| project Timestamp, FileName, ProcessCommandLine  
-
+| where ProcessCommandLine contains "kdbx"  
+| where InitiatingProcessAccountName == @"yuki.tanaka"
+| project Timestamp, DeviceName, AccountName, FileName,ProcessVersionInfoFileDescription, ProcessCommandLine
+| order by Timestamp desc 
+```
 **Key observations:**
 - Recursive search of user directories
 - Targeted KeePass database files (`.kdbx`)
@@ -897,6 +903,85 @@ This activity represents a transition from environmental discovery to **credenti
 - **Tactic:** Discovery  
 - **Technique:** T1552.001 — Credentials in Files
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1391" height="158" alt="Screenshot 2025-12-19 164441" src="https://github.com/user-attachments/assets/40c63662-27a0-4884-a092-21a2d2007d26" />
 
+---
+
+###  Flag 16: Discovery — Plaintext Credential File
+
+**Objective**  
+Identify a plaintext credential file accessed by the attacker. Plaintext password files represent critical security failures and often provide immediate access to additional systems.
+
+**Evidence Observed**  
+Process execution telemetry showed an interactive application being used to open a plaintext password file during a remote session originating from the previously compromised system.
+
+**KQL Used (MDE Advanced Hunting):**  
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessRemoteSessionIP == "10.1.0.204"  
+| where ProcessCommandLine has "OLD-Passwords.txt"  
+| project Timestamp, DeviceName, InitiatingProcessAccountName, FileName, ProcessCommandLine  
+| order by Timestamp desc  
+
+**Key observations:**
+- Application used: `notepad.exe`
+- File accessed: `OLD-Passwords.txt`
+- File location: User Desktop directory
+- Action performed during a RemoteInteractive session
+- Activity attributed to compromised account `yuki.tanaka`
+
+**Analysis**  
+The attacker explicitly opened the file `OLD-Passwords.txt` using `notepad.exe`, demonstrating **intentional interaction** with a plaintext credential file rather than incidental access or automated scanning. This action occurred within a remote session originating from the previously compromised source system, firmly tying the activity to lateral movement behavior.
+
+Plaintext password files commonly contain reused, legacy, or high-privilege credentials. By directly opening this file, the attacker bypassed more complex credential theft techniques and gained immediate access to sensitive authentication material.
+
+This behavior significantly increased the potential impact of the compromise and highlights the ongoing risk posed by insecure credential storage practices.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Discovery  
+- **Technique:** T1552.001 — Credentials in Files
+
+**Evidence Screenshot**  
+<img width="582" height="188" alt="image" src="https://github.com/user-attachments/assets/09edfa20-a39d-4ac3-ad91-869b3a705561" />
+
+---
+
+### 🚩 Flag 17: Collection — Data Staging Directory
+
+**Objective**  
+Identify the directory used by the attacker to stage collected data prior to exfiltration. Staging directories are critical forensic artifacts that reveal attacker workflow and data handling practices.
+
+**Evidence Observed**  
+File system telemetry revealed the creation and use of a directory within a legitimate-looking Windows system path that was repeatedly referenced during data collection and preparation activities.
+
+**KQL Used (MDE Advanced Hunting):**  
+DeviceFileEvents  
+| where DeviceName == "azuki-adminpc"  
+| where FolderPath has @"C:\ProgramData\Microsoft\Crypto"  
+| where ActionType in ("FolderCreated","FileCreated","FileModified")  
+| project Timestamp, ActionType, FileName, FolderPath  
+| order by Timestamp asc  
+
+**Key observations:**
+- Staging directory identified: `C:\ProgramData\Microsoft\Crypto\staging`
+- Directory mimics a legitimate Windows cryptographic service path
+- Multiple file creation and modification events occurred within this directory
+- Directory usage began after discovery activities completed
+
+**Analysis**  
+The directory `C:\ProgramData\Microsoft\Crypto\staging` was identified as the attacker’s data staging location. By placing staged data within a path that resembles legitimate Windows cryptographic service directories, the attacker reduced the likelihood of raising suspicion during casual inspection or automated monitoring.
+
+The repeated creation and modification of files within this directory, following extensive discovery activity, strongly indicates its use as a centralized collection point for sensitive data prior to archiving and exfiltration.
+
+Identifying this staging directory was a key turning point in the investigation, as it enabled defenders to:
+- Scope the volume of collected data
+- Identify subsequent archive creation
+- Correlate staging activity with exfiltration events
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Collection  
+- **Technique:** T1074.001 — Data Staged: Local Data Staging
+
+**Evidence Screenshot**  
+/images/flag17_data_staging_directory.png
