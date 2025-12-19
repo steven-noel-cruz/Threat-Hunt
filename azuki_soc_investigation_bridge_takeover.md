@@ -248,7 +248,7 @@ The attacker leveraged **existing trust, native tooling, and legitimate services
 
 ``` mermaid
 flowchart LR
-    A[Existing Foothold<br/>(from prior breach)] --> B[Lateral Movement<br/>Valid Accounts]
+    A[Existing Foothold<br/>from prior breach] --> B[Lateral Movement<br/>Valid Accounts]
     B --> C[Execution<br/>Payload Download & Extraction]
     C --> D[Persistence<br/>C2 + Backdoor Account]
     D --> E[Discovery<br/>Sessions, Trusts, Network, Files]
