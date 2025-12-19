@@ -338,5 +338,86 @@ Identifying the source system was critical for:
 
 --- 
 
+###  Flag 2: Lateral Movement — Compromised Credentials
+
+**Objective**  
+Identify the account used by the attacker to authenticate during lateral movement. Determining the compromised credentials helps define the blast radius and informs credential reset and containment actions.
+
+**Evidence Observed**  
+RemoteInteractive logon events showed repeated use of a single user account across multiple Azuki systems during lateral movement.
+
+**KQL Used (MDE Advanced Hunting):**
+```kql
+DeviceLogonEvents
+| where DeviceName == "azuki-adminpc"
+| where RemoteIP != "" and RemoteDeviceName startswith "azuki"
+| sort by Timestamp desc
+```
+**Key observations:**
+- Account used: `yuki.tanaka`
+- Logon type: `RemoteInteractive`
+- Repeated authentication to administrative systems
+
+**Analysis**  
+The account `yuki.tanaka` was consistently associated with RemoteInteractive logons originating from the previously identified source system. This account had been compromised during an earlier phase of the incident and was reused for lateral movement, allowing the attacker to pivot without triggering exploit-based detections.
+
+The reuse of valid credentials indicates:
+- Trust abuse rather than vulnerability exploitation
+- Increased risk of undetected movement
+- Potential exposure of additional systems accessible by this account
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Lateral Movement  
+- **Technique:** T1078 — Valid Accounts
+
+**Evidence Screenshot (Placeholder)**
+<img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
+
+*With the compromised credentials identified, the investigation next focused on determining the specific system that was targeted during lateral movement.*
+
+---
+
+### 🚩 Flag 3: Lateral Movement — Target Device
+
+**Objective**  
+Identify the high-value system targeted during lateral movement. Determining the destination device clarifies what level of access the attacker achieved and what data was placed at risk.
+
+**Evidence Observed**  
+RemoteInteractive logon events originating from the previously identified source IP were correlated to specific destination devices within the Azuki environment.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceLogonEvents  
+| where DeviceName contains "azuki"  
+| where LogonType has "RemoteInteractive"  
+| where RemoteIP == "10.1.0.204"  
+| summarize LogonCount = count() by DeviceName  
+| order by LogonCount desc  
+```
+**Key observations:**
+- Target device: `azuki-adminpc`
+- Logon type: `RemoteInteractive`
+- Access originated from the compromised source system
+- Device naming convention indicates an administrative or executive workstation
+
+**Analysis**  
+The device `azuki-adminpc` was identified as the primary destination for lateral movement activity originating from the compromised source system. The naming convention and access pattern strongly suggest this system belonged to an administrative or executive user, making it a high-value target.
+
+Successful access to this device represented a significant escalation in attacker capability. By pivoting into an administrative workstation, the attacker gained visibility into sensitive business data and the ability to perform privileged actions without immediately raising suspicion.
+
+This finding confirms that the attacker’s objective extended beyond persistence and into **control of trusted systems** within the organization.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Lateral Movement  
+- **Technique:** T1078 — Valid Accounts
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
+
+---
+
+
+
+
 
 
