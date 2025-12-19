@@ -495,7 +495,7 @@ This command represents the transition from access to **active execution**, mark
 - **Technique:** T1105 — Ingress Tool Transfer
 
 **Evidence Screenshot (Placeholder)**  
-<img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
+<img width="1565" height="137" alt="image" src="https://github.com/user-attachments/assets/e595bc5d-5bbd-42a6-9cf0-641ecf0cc9e7" />
 
 ---
 
