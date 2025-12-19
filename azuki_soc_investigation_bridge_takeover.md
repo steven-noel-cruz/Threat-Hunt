@@ -268,4 +268,75 @@ This progression highlights why early detection of **credential misuse, encoded 
 
 ---
 
-## 
+## 🚨 Detailed Findings — Flag-by-Flag Analysis
+
+The following sections document the investigation findings **in the order they were uncovered**, corresponding directly to each flag in the *Bridge Takeover* challenge.
+
+Each flag represents a **discrete investigative milestone** commonly included in real-world incident response and threat intelligence reports. Rather than treating these as isolated answers, the analysis emphasizes:
+
+- **What evidence was identified**
+- **How it was discovered**
+- **Why it mattered to the overall incident**
+
+All findings are supported by **Microsoft Defender for Endpoint telemetry**, with commands, indicators, and behaviors mapped to **MITRE ATT&CK techniques** where applicable.
+
+> **Note:** While flags are presented individually, they should be interpreted as part of a continuous attack narrative. Many findings build upon previous discoveries, reinforcing the importance of correlation over isolated indicators.
+
+### 🧩 Structure of Each Flag Section
+
+Each flag analysis follows a consistent structure:
+
+- **Objective** — What the flag was designed to identify  
+- **Evidence Observed** — Key telemetry or artifacts used  
+- **Analysis** — How the evidence was interpreted  
+- **MITRE ATT&CK Mapping** — Relevant tactics and techniques  
+
+This approach mirrors professional SOC and DFIR reporting standards, ensuring the investigation is **reproducible, defensible, and operationally useful**.
+
+---
+
+### Flag 1: Lateral Movement — Source System
+
+**Objective**  
+Identify the originating system used by the attacker to pivot laterally into the administrative environment.
+
+**Evidence Observed**  
+Analysis of **RemoteInteractive** logon events across Azuki systems revealed repeated remote sessions originating from a single internal IP address.
+
+**KQL Used (MDE Advanced Hunting):**
+```kql
+DeviceLogonEvents
+| where DeviceName == "azuki-adminpc"
+| where RemoteIP != "" and RemoteDeviceName startswith "azuki"
+| sort by Timestamp desc
+```
+
+**Key observations:** 
+- Logon type: RemoteInteractive
+- Source IP address: 10.1.0.204
+- Consistent activity across administrative targets
+
+**Analysis**
+The source IP address `10.1.0.204` was consistently associated with RemoteInteractive logons into higher-value systems. Correlation with prior investigation context confirmed that this IP belonged to `azuki-sl`, a system compromised during an earlier phase of the Azuki Breach Saga.
+
+This indicates the attacker **reused an existing foothold** rather than exploiting a new vulnerability, leveraging trusted access paths to move laterally within the environment.
+
+Identifying the source system was critical for:
+- Establishing the attack progression
+- Confirming scope overlap with earlier breaches
+- Guiding subsequent pivots into credential usage and target identification
+
+
+**MITRE ATT&CK Mapping**
+- Tactic: Lateral Movement
+- Technique: T1078 — Valid Accounts
+
+**Evidence**
+<img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
+
+*With the source system identified, the investigation pivoted to determining which credentials were used to facilitate lateral movement.*
+
+--- 
+
+
+
