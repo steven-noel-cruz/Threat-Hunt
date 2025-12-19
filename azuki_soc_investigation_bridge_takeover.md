@@ -246,23 +246,16 @@ The attacker leveraged **existing trust, native tooling, and legitimate services
 
 ###  Kill Chain Diagram
 
-```
+``` mermaid
 flowchart LR
     A[Existing Foothold<br/>(from prior breach)]
     --> B[Lateral Movement<br/>Valid Accounts]
-
     B --> C[Execution<br/>Payload Download & Extraction]
-
     C --> D[Persistence<br/>C2 + Backdoor Account]
-
     D --> E[Discovery<br/>Sessions, Trusts, Network, Files]
-
     E --> F[Collection<br/>Data Staging & Archiving]
-
     F --> G[Exfiltration<br/>Cloud File Uploads]
-
     G --> H[Credential Access<br/>Browser & Password Manager]
-
     style B fill:#ffcccc
     style D fill:#ffd9b3
     style F fill:#fff2cc
