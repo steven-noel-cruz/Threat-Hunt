@@ -332,7 +332,7 @@ Identifying the source system was critical for:
 - Tactic: Lateral Movement
 - Technique: T1078 — Valid Accounts
 
-**Evidence**
+**Evidence Screenshot**
 <img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
 
 *With the source system identified, the investigation pivoted to determining which credentials were used to facilitate lateral movement.*
@@ -372,7 +372,7 @@ The reuse of valid credentials indicates:
 - **Tactic:** Lateral Movement  
 - **Technique:** T1078 — Valid Accounts
 
-**Evidence Screenshot (Placeholder)**
+**Evidence Screenshot**
 <img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
 
 *With the compromised credentials identified, the investigation next focused on determining the specific system that was targeted during lateral movement.*
@@ -412,7 +412,7 @@ This finding confirms that the attacker’s objective extended beyond persistenc
 - **Tactic:** Lateral Movement  
 - **Technique:** T1078 — Valid Accounts
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1104" height="555" alt="image" src="https://github.com/user-attachments/assets/07917867-e406-4d35-8db5-689c3b224046" />
 
 ---
@@ -454,7 +454,7 @@ Identifying the payload hosting service provides defenders with an actionable in
 - **Tactic:** Execution  
 - **Technique:** T1608.001 — Stage Capabilities: Upload Malware
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1565" height="137" alt="image" src="https://github.com/user-attachments/assets/e595bc5d-5bbd-42a6-9cf0-641ecf0cc9e7" />
 
 ---
@@ -494,7 +494,7 @@ This command represents the transition from access to **active execution**, mark
 - **Tactic:** Execution  
 - **Technique:** T1105 — Ingress Tool Transfer
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1565" height="137" alt="image" src="https://github.com/user-attachments/assets/e595bc5d-5bbd-42a6-9cf0-641ecf0cc9e7" />
 
 ---
@@ -533,7 +533,7 @@ This step completed the delivery phase and enabled subsequent execution of attac
 - **Tactic:** Execution  
 - **Technique:** T1140 — Deobfuscate/Decode Files
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1081" height="133" alt="image" src="https://github.com/user-attachments/assets/84c17ed6-6c74-4049-b51c-6e8b274be8b7" />
 
 ---
@@ -572,17 +572,331 @@ The deployment of a dedicated C2 implant marked a shift from initial execution t
 - **Tactic:** Persistence  
 - **Technique:** T1059 — Command and Scripting Interpreter
 
-**Evidence Screenshot (Placeholder)**  
+**Evidence Screenshot**  
 <img width="1370" height="151" alt="image" src="https://github.com/user-attachments/assets/094b9341-6e33-4918-8e79-6692a78ceb7b" />
 
 ---
 
+###  Flag 8: Persistence — Named Pipe
+
+**Objective**  
+Identify the named pipe created by the command-and-control implant for inter-process communication. Named pipes are commonly used by C2 frameworks to relay commands while blending into normal Windows behavior.
+
+**Evidence Observed**  
+System event telemetry showed the creation of a named pipe shortly after execution of the C2 implant.
+
+**KQL Used (MDE Advanced Hunting):**
+```
+DeviceEvents
+| where DeviceName == "azuki-adminpc"
+| where ActionType == @"NamedPipeEvent"
+| where InitiatingProcessFolderPath contains "meterpreter"
+| project Timestamp, DeviceName, ActionType, InitiatingProcessFileName, AdditionalFields
+```
+**Key observations:**
+- Named pipe created: `\Device\NamedPipe\msf-pipe-5902`
+- Pipe creation occurred shortly after `meterpreter.exe` execution
+- Naming pattern is consistent with Metasploit-based tooling
+
+**Analysis**  
+The named pipe `\Device\NamedPipe\msf-pipe-5902` was created by the C2 implant to facilitate internal command-and-control communication. Metasploit and Meterpreter commonly use named pipes with predictable naming conventions, which can serve as strong behavioral indicators when correlated with suspicious process execution.
+
+Because named pipes are also used legitimately by Windows and third-party applications, detection typically relies on **contextual correlation** rather than pipe creation alone. In this case, the timing and association with a known C2 implant strongly indicate malicious use.
+
+Identifying the named pipe provides a valuable artifact for:
+- Endpoint detection tuning
+- Retrospective hunting
+- Incident scoping
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Command and Control  
+- **Technique:** T1090.001 — Internal Proxy
+
+**Evidence Screenshot**  
+<img width="1365" height="354" alt="image" src="https://github.com/user-attachments/assets/dc1cf421-7892-47d5-a846-c37041011ff5" />
+
+---
+
+###  Flag 9: Credential Access — Decoded Account Creation
+
+**Objective**  
+Identify the malicious command hidden within an encoded PowerShell execution. Decoding obfuscated commands reveals attacker intent that is not immediately visible through basic log inspection.
+
+**Evidence Observed**  
+Process execution telemetry revealed PowerShell commands executed with Base64-encoded input, a common technique used to evade basic string-based detections.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-adminpc"
+| where ProcessCommandLine contains "enc"
+| where InitiatingProcessAccountName != @"system"
+| where FileName contains "powershell"
+| extend Enc = extract(@"-EncodedCommand\s+([A-Za-z0-9+/=]+)", 1, ProcessCommandLine)
+| extend Decoded = base64_decode_tostring(Enc)
+| project Timestamp, DeviceName, ProcessCommandLine, Decoded 
+```
+**Key observations:**
+- PowerShell executed with encoded input
+- Encoded payload concealed account creation activity
+- Execution occurred after C2 implant deployment
+
+**Analysis**  
+Decoding the Base64-encoded PowerShell payload revealed the following command:
+
+`net user yuki.tanaka2 B@ckd00r2024! /add`
+
+This command created a new local user account with a strong, attacker-controlled password. The use of Base64 encoding obscured the command’s intent in raw telemetry, allowing the activity to blend into normal administrative PowerShell usage.
+
+Creating a new account provided the attacker with an **alternative access mechanism** independent of the original compromised credentials, increasing resilience against containment actions such as password resets.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Credential Access  
+- **Technique:** T1027 — Obfuscated Files or Information
+
+**Evidence Screenshot**  
+<img width="1260" height="115" alt="image" src="https://github.com/user-attachments/assets/6e8d04d8-5ca1-4e32-91ed-3d3dd78a48ea" />
+
+---
+
+###  Flag 10: Persistence — Backdoor Account
+
+**Objective**  
+Identify the backdoor account created by the attacker to maintain alternate access if primary credentials or implants were discovered and removed.
+
+**Evidence Observed**  
+Decoded command output from the previous flag revealed the creation of a new local user account designed to blend in with existing legitimate accounts.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-adminpc"
+| where ProcessCommandLine contains "enc"
+| where InitiatingProcessAccountName != @"system"
+| where FileName contains "powershell"
+| extend Enc = extract(@"-EncodedCommand\s+([A-Za-z0-9+/=]+)", 1, ProcessCommandLine)
+| extend Decoded = base64_decode_tostring(Enc)
+| project Timestamp, DeviceName, ProcessCommandLine, Decoded 
+```
+**Key observations:**
+- Newly created account: `yuki.tanaka2`
+- Account naming closely mirrors an existing legitimate user
+- Account creation followed shortly after C2 implant deployment
+
+**Analysis**  
+The account `yuki.tanaka2` was identified as a backdoor account created by the attacker. By closely mimicking the name of an existing user, the attacker reduced the likelihood of immediate detection during routine account reviews.
+
+Backdoor accounts provide attackers with a **durable persistence mechanism**, allowing re-entry even if implants are removed or original credentials are reset. This technique is especially effective in environments with limited account auditing or alerting on local user creation.
+
+The presence of this account significantly increased the attacker’s ability to maintain long-term access to the compromised system.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Persistence  
+- **Technique:** T1136.001 — Create Account: Local Account
+
+**Evidence Screenshot**  
+<img width="1260" height="115" alt="image" src="https://github.com/user-attachments/assets/6e8d04d8-5ca1-4e32-91ed-3d3dd78a48ea" />
+
+---
+
+###  Flag 11: Persistence — Decoded Privilege Escalation Command
+
+**Objective**  
+Identify the command used to elevate the privileges of the backdoor account. Privilege escalation of attacker-created accounts enables full administrative control and long-term persistence.
+
+**Evidence Observed**  
+Additional Base64-encoded PowerShell executions were identified following the creation of the backdoor account. These executions obscured the intent of privilege modification actions.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-adminpc"
+| where ProcessCommandLine contains "enc"
+| where InitiatingProcessAccountName != @"system"
+| where FileName contains "powershell"
+| extend Enc = extract(@"-EncodedCommand\s+([A-Za-z0-9+/=]+)", 1, ProcessCommandLine)
+| extend Decoded = base64_decode_tostring(Enc)
+| project Timestamp, DeviceName, ProcessCommandLine, Decoded 
+```  
+
+**Key observations:**
+- PowerShell executed with encoded input
+- Encoded payload modified local group membership
+- Activity occurred shortly after backdoor account creation
+
+**Analysis**  
+Decoding the Base64-encoded PowerShell command revealed the following action:
+
+`net localgroup Administrators yuki.tanaka2 /add`
+
+This command added the attacker-created backdoor account to the local **Administrators** group, granting full administrative privileges. Elevating the account in this manner ensured that the attacker could perform privileged actions without relying on the original compromised credentials.
+
+This step completed a layered persistence strategy:
+- C2 implant for interactive access
+- Backdoor account for redundancy
+- Administrative privileges for unrestricted control
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Persistence  
+- **Technique:** T1078.003 — Valid Accounts: Local Accounts
+
+**Evidence Screenshot**  
+<img width="1396" height="138" alt="image" src="https://github.com/user-attachments/assets/b35bb587-c766-41b0-a1bb-5d5e4c733bd1" />
+
+---
+
+###  Flag 12: Discovery — Session Enumeration
+
+**Objective**  
+Identify the command used by the attacker to enumerate active Remote Desktop sessions. Session enumeration allows attackers to identify logged-in users, high-value targets, and opportunities to avoid detection.
+
+**Evidence Observed**  
+Process execution telemetry showed execution of a native Windows command commonly used to list active terminal service sessions.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-adminpc"  
+| where ProcessCommandLine has_any ("qwinsta","query user")  
+| project Timestamp, DeviceName,AccountName, ProcessCommandLine
+```
+**Key observations:**
+- Session enumeration command executed: `qwinsta`
+- Command executed in an administrative context
+- Activity occurred after persistence was established
+
+**Analysis**  
+The attacker executed the `qwinsta` command to enumerate active Remote Desktop sessions on the compromised system. This command provides visibility into logged-on users and active sessions, enabling the attacker to identify high-value accounts or determine whether an administrator was currently active.
+
+Session enumeration is often performed after persistence is secured, allowing the attacker to operate more confidently while minimizing the risk of detection.
+
+This behavior demonstrates a methodical approach to situational awareness prior to further discovery and data access.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Discovery  
+- **Technique:** T1033 — System Owner/User Discovery
+
+**Evidence Screenshot**  
+<img width="363" height="123" alt="image" src="https://github.com/user-attachments/assets/4d73783e-8665-4435-94a1-6cb8134d0365" />
+
+---
+
+###  Flag 13: Discovery — Domain Trust Enumeration
+
+**Objective**  
+Identify how the attacker enumerated domain trust relationships. Understanding trust relationships helps attackers identify additional lateral movement paths and high-value targets across connected environments.
+
+**Evidence Observed**  
+Process execution telemetry showed execution of a native Windows command used to query domain trust information with parameters that expose all trust relationships.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where InitiatingProcessAccountName == @"yuki.tanaka"
+| where ProcessCommandLine contains "trust"  
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine  
+```
+**Key observations:**
+- Command executed: `"nltest.exe" /domain_trusts /all_trusts`
+- Output enumerates direct and transitive domain trusts
+- Activity occurred during the broader discovery phase
+
+**Analysis**  
+The attacker executed `nltest /domain_trusts /all_trusts` to enumerate trust relationships within the domain. This command provides visibility into how authentication and authorization flow between domains, revealing potential paths for lateral movement beyond the initially compromised environment.
+
+By enumerating all trust types, including transitive trusts, the attacker demonstrated intent to understand the broader organizational landscape rather than limiting activity to a single domain.
+
+This behavior aligns with deliberate reconnaissance aimed at identifying expansion opportunities and assessing the full potential impact of the compromise.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Discovery  
+- **Technique:** T1482 — Domain Trust Discovery
+
+**Evidence Screenshot**  
+<img width="436" height="340" alt="image" src="https://github.com/user-attachments/assets/f881e608-3bfa-4824-8a8c-2ea594e44e6c" />
+
+---
+
+###  Flag 14: Discovery — Network Connection Enumeration
+
+**Objective**  
+Identify the command used by the attacker to enumerate active network connections and associated processes. Network connection enumeration helps attackers understand active sessions, listening services, and potential lateral movement opportunities.
+
+**Evidence Observed**  
+Process execution telemetry showed execution of a native Windows utility commonly used to list active network connections along with the owning process identifiers.
+
+**KQL Used (MDE Advanced Hunting):**  
+```
+DeviceProcessEvents
+| where Timestamp between (
+    datetime(2025-11-24T00:00:00.7943081Z)
+    ..
+    datetime(2025-11-26T00:00:00.7943081Z)
+)
+| where DeviceName == "azuki-adminpc"  
+| where ProcessCommandLine contains "kdbx"  
+| where InitiatingProcessAccountName == @"yuki.tanaka"
+| project Timestamp, DeviceName, AccountName, FileName,ProcessVersionInfoFileDescription, ProcessCommandLine
+| order by Timestamp desc 
+```
+
+**Key observations:**
+- Command executed: `netstat -ano`
+- Output includes active connections, listening ports, and process IDs
+- Activity occurred during the discovery phase following session and trust enumeration
+
+**Analysis**  
+The attacker executed `netstat -ano` to enumerate active network connections and identify which processes owned each connection. Including the `-o` flag provided process identifiers, enabling the attacker to correlate network activity with specific applications or services.
+
+This information can be used to identify:
+- Active management sessions
+- Internally exposed services
+- Processes suitable for monitoring, hijacking, or further investigation
+
+Network enumeration at this stage reflects a methodical effort to build situational awareness before proceeding to data discovery and collection.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Discovery  
+- **Technique:** T1049 — System Network Connections Discovery
+
+**Evidence Screenshot**  
+<img width="376" height="149" alt="Screenshot 2025-12-19 163759" src="https://github.com/user-attachments/assets/508c311a-48e4-417d-9d0f-58c03e639e60" />
 
 
+---
 
+### 🚩 Flag 15: Discovery — Password Database Search
 
+**Objective**  
+Identify how the attacker searched for password management databases within user directories. Password databases represent high-value targets because they may contain credentials for multiple systems.
 
+**Evidence Observed**  
+Process execution telemetry showed recursive file enumeration targeting password database file extensions within user profile directories.
 
+**KQL Used (MDE Advanced Hunting):**  
+DeviceProcessEvents  
+| where DeviceName == "azuki-adminpc"  
+| where ProcessCommandLine has_any ("where","dir")  
+| where ProcessCommandLine has ".kdbx"  
+| project Timestamp, FileName, ProcessCommandLine  
 
+**Key observations:**
+- Recursive search of user directories
+- Targeted KeePass database files (`.kdbx`)
+- Enumeration focused on credential storage locations
 
+**Analysis**  
+The attacker used a recursive file search to locate KeePass password database files within user directories. KeePass databases are commonly used to store large numbers of credentials, making them a priority target during post-compromise discovery.
+
+By searching specifically for `.kdbx` files, the attacker demonstrated awareness of common enterprise password management practices and intentionally focused on files likely to yield high-impact credential access.
+
+This activity represents a transition from environmental discovery to **credential-focused reconnaissance**, directly setting the stage for subsequent credential theft.
+
+**MITRE ATT&CK Mapping**
+- **Tactic:** Discovery  
+- **Technique:** T1552.001 — Credentials in Files
+
+**Evidence Screenshot (Placeholder)**  
+<img width="1391" height="158" alt="Screenshot 2025-12-19 164441" src="https://github.com/user-attachments/assets/40c63662-27a0-4884-a092-21a2d2007d26" />
 
