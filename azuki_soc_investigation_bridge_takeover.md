@@ -1,4 +1,4 @@
-++# SOC Incident Investigation – Azuki Import/Export Compromise++
+# ++SOC Incident Investigation – Azuki Import/Export Compromise++
 
 **Analyst:** Steven Cruz  
 **Source:** Cyber Range SOC Challenge  
