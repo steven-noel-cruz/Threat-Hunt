@@ -361,6 +361,37 @@ DeviceNetworkEvents
 
 ---
 
+## MITRE ATT&CK Mapping
+
+| Flag | Activity Observed | Technique ID | Technique Name | Tactic |
+|-----:|------------------|-------------|----------------|--------|
+| 1 | Initial endpoint association via valid user context | T1078 | Valid Accounts | Initial Access |
+| 2 | Remote session source attribution | T1021 | Remote Services | Lateral Movement |
+| 3 | PowerShell script execution from user directory | T1059.001 | PowerShell | Execution |
+| 4 | Identity and privilege enumeration | T1087 | Account Discovery | Discovery |
+| 5 | Discovery of bonus-related files | T1083 | File and Directory Discovery | Discovery |
+| 6 | Local staging of sensitive data into archive | T1074.001 | Local Data Staging | Collection |
+| 7 | Outbound connectivity testing via PowerShell | T1071.001 | Web Protocols | Command and Control |
+| 8 | Persistence via HKCU Run key | T1547.001 | Registry Run Keys / Startup Folder | Persistence |
+| 9 | Persistence via scheduled task | T1053.005 | Scheduled Task | Persistence |
+| 10 | Scorecard access using alternate user context | T1078 | Valid Accounts | Lateral Movement |
+| 11 | Bonus data access by higher-privilege context | T1078 | Valid Accounts | Lateral Movement |
+| 12 | Performance review file access | T1083 | File and Directory Discovery | Discovery |
+| 13 | Sensitive read of finalized bonus artifact | T1005 | Data from Local System | Collection |
+| 14 | Candidate archive creation | T1074.001 | Local Data Staging | Collection |
+| 15 | Outbound transfer attempt | T1041 | Exfiltration Over C2 Channel | Exfiltration |
+| 16 | Event log clearing | T1070.001 | Clear Windows Event Logs | Defense Evasion |
+| 17 | Expansion to second endpoint | TA0008 | Lateral Movement | Lateral Movement |
+| 18 | Approved bonus artifact access on second endpoint | T1005 | Data from Local System | Collection |
+| 19 | Scorecard access on second endpoint | T1083 | File and Directory Discovery | Discovery |
+| 20 | Staging on second endpoint | T1074.001 | Local Data Staging | Collection |
+| 21 | Final staging activity timing | T1074.001 | Local Data Staging | Collection |
+| 22 | Final outbound connection attempt | T1041 | Exfiltration Over C2 Channel | Exfiltration |
+
+
+
+---
+
 ## Credits
 
 Thanks to **Josh Madakor** and **Joshua Balondo** for the scenario design and cyber range environment.
