@@ -1,4 +1,4 @@
-# SOC Incident Investigation – Crosscheck (Full KQL)
+# SOC Incident Investigation – Crosscheck
 
 **Scenario:** Crosscheck – Year-End Compensation & Performance Review Access  
 **Methodology:** KQL-only Threat Hunting (Microsoft Defender for Endpoint)
